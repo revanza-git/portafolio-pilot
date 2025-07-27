@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Wallet, ChevronDown, Copy, ExternalLink, LogOut } from 'lucide-react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletStore } from '@/stores/wallet';
 
 export function WalletConnectButton() {
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const { toast } = useToast();
+  const { setWallet, disconnect: disconnectStore } = useWalletStore();
+
+  // Sync wagmi state with zustand store
+  useEffect(() => {
+    console.log('Wallet state change:', { address, isConnected, chainId });
+    if (isConnected && address && chainId) {
+      setWallet(address, chainId);
+    } else if (!isConnected) {
+      disconnectStore();
+    }
+  }, [isConnected, address, chainId, setWallet, disconnectStore]);
 
   const handleConnect = async () => {
     try {
@@ -26,6 +38,7 @@ export function WalletConnectButton() {
         connect({ connector });
       }
     } catch (error) {
+      console.error('Wallet connection error:', error);
       toast({
         title: "Connection Failed",
         description: "Failed to connect wallet. Please try again.",
@@ -36,6 +49,7 @@ export function WalletConnectButton() {
 
   const handleDisconnect = () => {
     disconnect();
+    disconnectStore();
     toast({
       title: "Wallet Disconnected",
       description: "Your wallet has been disconnected",
