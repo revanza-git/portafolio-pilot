@@ -51,7 +51,7 @@ export function useRevokeAllowance() {
         abi: ERC20_ABI,
         functionName: 'approve',
         args: [params.spenderAddress, 0n],
-      });
+      } as any);
 
       toast({
         title: "Transaction Submitted",

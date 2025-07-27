@@ -72,7 +72,7 @@ export function useClaimRewards() {
                 params.tokenAddress ? [params.tokenAddress] : [],
                 userAddress
               ],
-            });
+            } as any);
           } catch (contractError) {
             console.warn('Aave contract not found, using mock transaction');
             // For demo purposes - show success after delay
@@ -95,7 +95,7 @@ export function useClaimRewards() {
               abi: COMPOUND_V3_COMET_ABI,
               functionName: 'claim',
               args: [userAddress, true],
-            });
+            } as any);
           } catch (contractError) {
             console.warn('Compound contract not found, using mock transaction');
             setTimeout(() => {
@@ -122,7 +122,7 @@ export function useClaimRewards() {
                 amount0Max: BigInt('340282366920938463463374607431768211455'),
                 amount1Max: BigInt('340282366920938463463374607431768211455'),
               }],
-            });
+            } as any);
           } catch (contractError) {
             console.warn('Uniswap contract not found, using mock transaction');
             setTimeout(() => {
