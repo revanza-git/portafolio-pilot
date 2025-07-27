@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -6,34 +6,38 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export function PnLChart() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
-  // Mock P&L data
-  const generatePnLData = (days: number) => {
-    const data = [];
-    const now = new Date();
-    
-    for (let i = days; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
+  // Memoized P&L data generation with stable seed
+  const data = useMemo(() => {
+    const generatePnLData = (days: number) => {
+      const data = [];
+      const now = new Date();
       
-      // Generate realistic P&L movement
-      const baseValue = 1000; // $1000 starting value
-      const dailyVariation = (Math.random() - 0.5) * 100; // ±$50 daily variation
-      const trendFactor = (days - i) * 2; // Gradual upward trend
-      const pnl = baseValue + trendFactor + dailyVariation;
+      for (let i = days; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        
+        // Generate realistic P&L movement with stable seed based on date
+        const baseValue = 1000; // $1000 starting value
+        const seed = date.getTime() / (1000 * 60 * 60 * 24); // Day-based seed
+        const pseudoRandom = Math.sin(seed) * 10000; // Deterministic "random"
+        const dailyVariation = (pseudoRandom - Math.floor(pseudoRandom)) * 200 - 100; // ±$100 variation
+        const trendFactor = (days - i) * 3; // Gradual upward trend
+        const pnl = baseValue + trendFactor + dailyVariation;
+        
+        data.push({
+          date: date.toISOString().split('T')[0],
+          timestamp: date.getTime(),
+          realized: Math.max(0, pnl * 0.6 + dailyVariation * 0.3),
+          unrealized: Math.max(0, pnl * 0.4 + dailyVariation * 0.7),
+          total: pnl,
+        });
+      }
       
-      data.push({
-        date: date.toISOString().split('T')[0],
-        timestamp: date.getTime(),
-        realized: Math.max(0, pnl * 0.6),
-        unrealized: Math.max(0, pnl * 0.4),
-        total: pnl,
-      });
-    }
-    
-    return data;
-  };
+      return data;
+    };
 
-  const data = generatePnLData(timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90);
+    return generatePnLData(timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90);
+  }, [timeRange]); // Only regenerate when timeRange changes
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
