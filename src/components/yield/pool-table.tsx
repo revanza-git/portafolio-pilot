@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useYieldPools } from '@/hooks/use-market-data';
 
 interface Pool {
   id: string;
@@ -21,44 +22,10 @@ interface Pool {
 
 export function PoolTable() {
   const [filter, setFilter] = useState('all');
-  const [isLoading] = useState(false);
-
-  // Mock data - TODO: Replace with real API
-  const pools: Pool[] = [
-    {
-      id: '1',
-      protocol: 'Aave',
-      pair: 'USDC',
-      chain: 'Ethereum',
-      apr: 4.2,
-      tvl: 2100000000,
-      userStaked: 5000,
-      rewards: 42.50,
-    },
-    {
-      id: '2',
-      protocol: 'Compound',
-      pair: 'ETH',
-      chain: 'Ethereum',
-      apr: 3.8,
-      tvl: 1500000000,
-      userStaked: 2.5,
-      rewards: 15.20,
-    },
-    {
-      id: '3',
-      protocol: 'Uniswap V3',
-      pair: 'USDC/ETH',
-      chain: 'Ethereum',
-      apr: 18.5,
-      tvl: 450000000,
-      userStaked: 1000,
-      rewards: 67.80,
-    },
-  ];
+  const { data: pools = [], isLoading } = useYieldPools(filter === 'all' ? undefined : filter);
 
   const filteredPools = pools.filter(pool => 
-    filter === 'all' || pool.chain.toLowerCase() === filter
+    filter === 'all' || pool.chain.toLowerCase().includes(filter.toLowerCase())
   );
 
   const handleClaim = (poolId: string) => {

@@ -1,14 +1,27 @@
 import { TrendingUp, TrendingDown, DollarSign, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { usePortfolioStore } from '@/stores/portfolio';
+import { usePortfolioWithRealPrices } from '@/hooks/use-market-data';
 
 interface PortfolioOverviewProps {
-  totalValue: number;
-  change24h: number;
-  isLoading: boolean;
+  totalValue?: number;
+  change24h?: number;
+  isLoading?: boolean;
 }
 
-export function PortfolioOverview({ totalValue, change24h, isLoading }: PortfolioOverviewProps) {
+export function PortfolioOverview({ 
+  totalValue: propTotalValue, 
+  change24h: propChange24h, 
+  isLoading: propIsLoading 
+}: PortfolioOverviewProps) {
+  const { tokens } = usePortfolioStore();
+  const { data: realData, isLoading: realDataLoading } = usePortfolioWithRealPrices(tokens);
+  
+  // Use real data if available, fallback to props
+  const totalValue = realData?.totalValue ?? propTotalValue ?? 0;
+  const change24h = realData?.change24h ?? propChange24h ?? 0;
+  const isLoading = realDataLoading || propIsLoading || false;
   const isPositive = change24h >= 0;
   const changePercent = totalValue > 0 ? (change24h / totalValue) * 100 : 0;
 

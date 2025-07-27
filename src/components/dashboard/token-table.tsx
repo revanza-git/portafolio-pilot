@@ -3,13 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenBalance } from '@/stores/portfolio';
+import { usePortfolioWithRealPrices } from '@/hooks/use-market-data';
 
 interface TokenTableProps {
   tokens: TokenBalance[];
   isLoading: boolean;
 }
 
-export function TokenTable({ tokens, isLoading }: TokenTableProps) {
+export function TokenTable({ tokens: propTokens, isLoading: propIsLoading }: TokenTableProps) {
+  const { data: realData, isLoading: realDataLoading } = usePortfolioWithRealPrices(propTokens);
+  
+  // Use real data if available, fallback to props
+  const tokens = realData?.tokens ?? propTokens;
+  const isLoading = realDataLoading || propIsLoading;
   if (isLoading) {
     return (
       <Card>
