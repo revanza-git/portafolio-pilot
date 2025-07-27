@@ -54,6 +54,7 @@ export function FeatureFlagProvider({ children }: FeatureFlagProviderProps) {
   }, []);
 
   const refreshFlags = async () => {
+    console.log('FeatureFlagContext: Refreshing flags...');
     try {
       const response = await fetch('/api/admin/feature-flags');
       if (response.ok) {
@@ -62,14 +63,17 @@ export function FeatureFlagProvider({ children }: FeatureFlagProviderProps) {
           acc[flag.key] = flag.enabled;
           return acc;
         }, {} as Record<string, boolean>);
+        console.log('FeatureFlagContext: Flags loaded from API:', flagsMap);
         setFlags(flagsMap);
       } else {
+        console.log('FeatureFlagContext: API failed, using local config fallback');
         // Fallback to local config if API fails
         const { config } = await import('@/lib/config');
         setFlags(config.features);
       }
     } catch (error) {
-      console.error('Failed to fetch feature flags:', error);
+      console.error('FeatureFlagContext: Failed to fetch feature flags:', error);
+      console.log('FeatureFlagContext: Using local config fallback');
       // Fallback to local config
       const { config } = await import('@/lib/config');
       setFlags(config.features);

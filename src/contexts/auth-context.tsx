@@ -57,13 +57,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [isConnected]);
 
   const checkAuthSession = async () => {
+    console.log('AuthContext: Checking auth session...');
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) {
+        console.log('AuthContext: No token found, setting loading false');
         setAuthState(prev => ({ ...prev, isLoading: false }));
         return;
       }
 
+      console.log('AuthContext: Token found, verifying with backend...');
       // Verify session with backend
       const response = await fetch('/api/auth/verify', {
         headers: {
@@ -73,6 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (response.ok) {
         const user = await response.json();
+        console.log('AuthContext: Session verified, user:', user);
         setAuthState({
           user,
           isAuthenticated: true,
@@ -80,12 +84,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
           error: null
         });
       } else {
+        console.log('AuthContext: Session invalid, clearing token');
         // Invalid token, clear it
         localStorage.removeItem('auth_token');
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      console.error('Auth session check failed:', error);
+      console.error('AuthContext: Auth session check failed:', error);
+      // Backend not available - continue without auth for now
+      console.log('AuthContext: Backend not available, continuing without auth');
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
