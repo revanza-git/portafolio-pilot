@@ -32,7 +32,8 @@ const queryClient = new QueryClient();
 const App = () => (
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      {/* AuthProvider temporarily bypassed */}
+      {/* <AuthProvider> */}
         <FeatureFlagProvider>
           <ThemeProvider>
             <TooltipProvider>
@@ -54,9 +55,10 @@ const App = () => (
                     <Route path="/watchlist" element={<Watchlist />} />
                     <Route path="/auth/signin" element={<SignIn />} />
                     <Route path="/auth/verify-email" element={<EmailVerification />} />
-                    <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+                    {/* Admin routes temporarily disabled */}
+                    {/* <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
                     <Route path="/admin/feature-flags" element={<AdminGuard><FeatureFlags /></AdminGuard>} />
-                    <Route path="/admin/banners" element={<AdminGuard><AdminBanners /></AdminGuard>} />
+                    <Route path="/admin/banners" element={<AdminGuard><AdminBanners /></AdminGuard>} /> */}
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
@@ -65,7 +67,7 @@ const App = () => (
             </TooltipProvider>
           </ThemeProvider>
         </FeatureFlagProvider>
-      </AuthProvider>
+      {/* </AuthProvider> */}
     </QueryClientProvider>
   </WagmiProvider>
 );
