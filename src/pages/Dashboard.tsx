@@ -10,7 +10,11 @@ import { generateMockTokens, generateMockTransactions } from '@/lib/mock-data';
 import { Navigate } from 'react-router-dom';
 
 export default function Dashboard() {
+  console.log('Dashboard: Component starting to render...');
+  
   const { isConnected } = useWalletStore();
+  console.log('Dashboard: Wallet connected:', isConnected);
+  
   const { 
     tokens, 
     totalValue, 
@@ -21,6 +25,8 @@ export default function Dashboard() {
     isLoading,
     setLoading 
   } = usePortfolioStore();
+  
+  console.log('Dashboard: Portfolio store loaded, isLoading:', isLoading);
 
   useEffect(() => {
     if (isConnected) {
@@ -42,10 +48,13 @@ export default function Dashboard() {
     }
   }, [isConnected, setTokens, setTotalValue, setTransactions, setLoading]);
 
-  if (!isConnected) {
-    return <Navigate to="/" replace />;
-  }
+  // Temporarily disabled wallet check
+  // if (!isConnected) {
+  //   return <Navigate to="/" replace />;
+  // }
 
+  console.log('Dashboard: About to render JSX...');
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
       <Navbar />
