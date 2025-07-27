@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useAlertsStore } from '@/stores/alerts';
+import { AccountingMethod } from '@/lib/pnl-calculator';
 
 interface CreateAlertModalProps {
   isOpen: boolean;
@@ -24,9 +26,16 @@ export function CreateAlertModal({ isOpen, onClose }: CreateAlertModalProps) {
   const [condition, setCondition] = useState<'above' | 'below'>('above');
   const [threshold, setThreshold] = useState('');
   const [channel, setChannel] = useState<'email' | 'telegram'>('email');
+  const [cooldown, setCooldown] = useState('60');
+  const [retryAttempts, setRetryAttempts] = useState('3');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [email, setEmail] = useState('user@example.com');
+  
   const { toast } = useToast();
+  const { addAlert } = useAlertsStore();
 
   const tokens = ['ETH', 'BTC', 'USDC', 'USDT', 'UNI', 'AAVE', 'COMP'];
+  const aprPools = ['AAVE Pool', 'Compound USDC', 'Uniswap V3'];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,14 +49,30 @@ export function CreateAlertModal({ isOpen, onClose }: CreateAlertModalProps) {
       return;
     }
 
-    // TODO: Submit to API
-    console.log('Creating alert:', {
+    if (channel === 'telegram' && !webhookUrl) {
+      toast({
+        title: "Missing Webhook URL",
+        description: "Please provide a Telegram webhook URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const alertData = {
       type,
       token,
       condition,
       threshold: parseFloat(threshold),
+      isActive: true,
       channel,
-    });
+      notificationSettings: {
+        cooldown: parseInt(cooldown),
+        retryAttempts: parseInt(retryAttempts),
+        ...(channel === 'telegram' ? { webhookUrl } : { email })
+      }
+    };
+
+    addAlert(alertData);
 
     toast({
       title: "Alert Created",
@@ -64,6 +89,9 @@ export function CreateAlertModal({ isOpen, onClose }: CreateAlertModalProps) {
     setCondition('above');
     setThreshold('');
     setChannel('email');
+    setCooldown('60');
+    setRetryAttempts('3');
+    setWebhookUrl('');
   };
 
   const handleClose = () => {
@@ -71,9 +99,16 @@ export function CreateAlertModal({ isOpen, onClose }: CreateAlertModalProps) {
     resetForm();
   };
 
+  const getTokenOptions = () => {
+    if (type === 'apr') {
+      return aprPools;
+    }
+    return tokens;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Create Alert</DialogTitle>
@@ -98,13 +133,13 @@ export function CreateAlertModal({ isOpen, onClose }: CreateAlertModalProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="token">Token/Asset</Label>
+              <Label htmlFor="token">{type === 'apr' ? 'Pool' : 'Token/Asset'}</Label>
               <Select value={token} onValueChange={setToken}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select token" />
+                  <SelectValue placeholder={`Select ${type === 'apr' ? 'pool' : 'token'}`} />
                 </SelectTrigger>
                 <SelectContent>
-                  {tokens.map((t) => (
+                  {getTokenOptions().map((t) => (
                     <SelectItem key={t} value={t}>
                       {t}
                     </SelectItem>
@@ -153,6 +188,64 @@ export function CreateAlertModal({ isOpen, onClose }: CreateAlertModalProps) {
                   <SelectItem value="telegram">Telegram</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {channel === 'telegram' && (
+              <div className="space-y-2">
+                <Label htmlFor="webhook">Telegram Webhook URL</Label>
+                <Input
+                  id="webhook"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://api.telegram.org/bot..."
+                />
+              </div>
+            )}
+
+            {channel === 'email' && (
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cooldown">Cooldown (minutes)</Label>
+                <Select value={cooldown} onValueChange={setCooldown}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 minutes</SelectItem>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="60">1 hour</SelectItem>
+                    <SelectItem value="120">2 hours</SelectItem>
+                    <SelectItem value="240">4 hours</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="retries">Retry Attempts</Label>
+                <Select value={retryAttempts} onValueChange={setRetryAttempts}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 attempt</SelectItem>
+                    <SelectItem value="2">2 attempts</SelectItem>
+                    <SelectItem value="3">3 attempts</SelectItem>
+                    <SelectItem value="5">5 attempts</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

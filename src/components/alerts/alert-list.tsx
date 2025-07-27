@@ -1,65 +1,14 @@
-import { useState } from 'react';
-import { Bell, BellOff, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Bell, BellOff, Trash2, TrendingUp, TrendingDown, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-
-interface Alert {
-  id: string;
-  type: 'price' | 'apr' | 'allowance';
-  token: string;
-  condition: 'above' | 'below';
-  threshold: number;
-  isActive: boolean;
-  channel: 'email' | 'telegram';
-  createdAt: number;
-  lastTriggered?: number;
-}
+import { useAlertsStore } from '@/stores/alerts';
+import { useAlertEvaluator } from '@/hooks/use-alert-evaluator';
 
 export function AlertList() {
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: '1',
-      type: 'price',
-      token: 'ETH',
-      condition: 'above',
-      threshold: 2600,
-      isActive: true,
-      channel: 'email',
-      createdAt: Date.now() - 86400000,
-    },
-    {
-      id: '2',
-      type: 'price',
-      token: 'USDC',
-      condition: 'below',
-      threshold: 0.99,
-      isActive: false,
-      channel: 'telegram',
-      createdAt: Date.now() - 172800000,
-    },
-    {
-      id: '3',
-      type: 'apr',
-      token: 'AAVE Pool',
-      condition: 'below',
-      threshold: 3.0,
-      isActive: true,
-      channel: 'email',
-      createdAt: Date.now() - 259200000,
-    },
-  ]);
-
-  const toggleAlert = (id: string) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === id ? { ...alert, isActive: !alert.isActive } : alert
-    ));
-  };
-
-  const deleteAlert = (id: string) => {
-    setAlerts(alerts.filter(alert => alert.id !== id));
-  };
+  const { alerts, toggleAlert, deleteAlert } = useAlertsStore();
+  const { triggerEvaluation } = useAlertEvaluator();
 
   const getAlertIcon = (type: string, condition: string) => {
     if (type === 'price') {
@@ -70,13 +19,13 @@ export function AlertList() {
     return <Bell className="h-4 w-4 text-primary" />;
   };
 
-  const formatThreshold = (alert: Alert) => {
-    if (alert.type === 'price') {
-      return `$${alert.threshold.toLocaleString()}`;
-    } else if (alert.type === 'apr') {
-      return `${alert.threshold}%`;
+  const formatThreshold = (type: string, threshold: number) => {
+    if (type === 'price') {
+      return `$${threshold.toLocaleString()}`;
+    } else if (type === 'apr') {
+      return `${threshold}%`;
     }
-    return alert.threshold.toString();
+    return threshold.toString();
   };
 
   const formatDate = (timestamp: number) => {
@@ -87,10 +36,45 @@ export function AlertList() {
     });
   };
 
+  const getCooldownStatus = (alert: any) => {
+    if (!alert.lastTriggered || !alert.notificationSettings?.cooldown) {
+      return null;
+    }
+
+    const cooldownMs = alert.notificationSettings.cooldown * 60 * 1000;
+    const timeSinceLastTrigger = Date.now() - alert.lastTriggered;
+    
+    if (timeSinceLastTrigger < cooldownMs) {
+      const remainingMs = cooldownMs - timeSinceLastTrigger;
+      const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+      return `Cooldown: ${remainingMinutes}m`;
+    }
+    
+    return null;
+  };
+
   return (
     <div className="space-y-4">
+      {/* Debug Controls */}
+      <Card className="bg-muted/20 border-primary/20">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Alert Evaluator (Demo Mode)
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={triggerEvaluation}
+            >
+              Test Evaluation
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {alerts.map((alert) => (
-        <Card key={alert.id}>
+        <Card key={alert.id} className={`${alert.isActive ? 'bg-gradient-card' : 'bg-muted/50'} shadow-card border-0`}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -98,23 +82,39 @@ export function AlertList() {
                   {getAlertIcon(alert.type, alert.condition)}
                   <div>
                     <div className="font-medium">
-                      {alert.token} {alert.condition} {formatThreshold(alert)}
+                      {alert.token} {alert.condition} {formatThreshold(alert.type, alert.threshold)}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {alert.type === 'price' ? 'Price Alert' : 
                        alert.type === 'apr' ? 'APR Alert' : 'Allowance Alert'} • 
                       Created {formatDate(alert.createdAt)}
                     </div>
+                    {alert.notificationSettings && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Cooldown: {alert.notificationSettings.cooldown}m • 
+                        Retries: {alert.notificationSettings.retryAttempts}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="capitalize">
                     {alert.channel}
                   </Badge>
                   {alert.lastTriggered && (
                     <Badge variant="secondary">
                       Last triggered {formatDate(alert.lastTriggered)}
+                    </Badge>
+                  )}
+                  {alert.triggerCount > 0 && (
+                    <Badge variant="outline">
+                      {alert.triggerCount} triggers
+                    </Badge>
+                  )}
+                  {getCooldownStatus(alert) && (
+                    <Badge variant="outline" className="text-warning">
+                      {getCooldownStatus(alert)}
                     </Badge>
                   )}
                 </div>

@@ -1,6 +1,10 @@
+import { useState } from 'react';
 import { Navbar } from '@/components/navigation/navbar';
 import { AlertList } from '@/components/alerts/alert-list';
 import { CreateAlertButton } from '@/components/alerts/create-alert-button';
+import { AlertHistoryComponent } from '@/components/alerts/alert-history';
+import { NotificationSettings } from '@/components/alerts/notification-settings';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useWalletStore } from '@/stores/wallet';
 import { Navigate } from 'react-router-dom';
 
@@ -26,7 +30,25 @@ export default function Alerts() {
           <CreateAlertButton />
         </div>
 
-        <AlertList />
+        <Tabs defaultValue="alerts" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="alerts">Active Alerts</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="alerts" className="space-y-6 mt-6">
+            <AlertList />
+          </TabsContent>
+          
+          <TabsContent value="history" className="space-y-6 mt-6">
+            <AlertHistoryComponent />
+          </TabsContent>
+          
+          <TabsContent value="settings" className="space-y-6 mt-6">
+            <NotificationSettings />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
