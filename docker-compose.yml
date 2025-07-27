@@ -1,0 +1,102 @@
+# DeFi Portfolio MVP Docker Compose
+# This is a placeholder for the full-stack setup
+
+version: '3.8'
+
+services:
+  # Frontend (React + Vite)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_BASE_URL=http://api:3001
+    depends_on:
+      - api
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+    networks:
+      - defi-network
+
+  # Backend API (Go + Fiber) - TODO: Implement
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - GO_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=defi_user
+      - DB_PASSWORD=defi_password
+      - DB_NAME=defi_portfolio
+      - JWT_SECRET=your_jwt_secret_here
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app
+    networks:
+      - defi-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=defi_user
+      - POSTGRES_PASSWORD=defi_password
+      - POSTGRES_DB=defi_portfolio
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - defi-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - defi-network
+
+  # pgAdmin for database management (development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@defiportfolio.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - defi-network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:
+
+networks:
+  defi-network:
+    driver: bridge
+
+# Usage:
+# Development: docker-compose --profile dev up
+# Production: docker-compose up --scale pgadmin=0
