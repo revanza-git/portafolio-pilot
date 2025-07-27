@@ -16,7 +16,8 @@ export function useAlertEvaluator() {
   const { data: priceData } = useTokenPrices(priceTokens);
 
   const evaluateAlerts = useCallback(async () => {
-    if (!priceData || alerts.length === 0) return;
+    const currentAlerts = useAlertsStore.getState().alerts; // Get fresh alerts state
+    if (!priceData || currentAlerts.length === 0) return;
 
     // Build evaluation context
     const context: AlertEvaluationContext = {
@@ -32,7 +33,7 @@ export function useAlertEvaluator() {
       allowanceData: {}
     };
 
-    const evaluationResults = AlertEvaluator.evaluateAlerts(alerts, context);
+    const evaluationResults = AlertEvaluator.evaluateAlerts(currentAlerts, context);
 
     for (const { alert, result, canTrigger } of evaluationResults) {
       // Update last evaluated time
@@ -90,20 +91,28 @@ export function useAlertEvaluator() {
         }
       }
     }
-  }, [alerts, priceData, addHistoryEntry, updateAlert, toast]);
+  }, [priceData, addHistoryEntry, updateAlert, toast]); // Remove 'alerts' from dependencies
 
   // Manual evaluation trigger (for testing)
   const triggerEvaluation = useCallback(() => {
-    evaluateAlerts();
-  }, [evaluateAlerts]);
+    const currentAlerts = useAlertsStore.getState().alerts; // Get latest alerts directly
+    if (currentAlerts.length > 0 && priceData) {
+      evaluateAlerts();
+    }
+  }, [evaluateAlerts, priceData]);
 
   // Auto-evaluate alerts periodically (in production, this would be a backend worker)
   useEffect(() => {
     // Only run if we have active alerts and price data
     if (alerts.some(a => a.isActive) && priceData) {
-      evaluateAlerts();
+      // Use a timeout to prevent immediate re-evaluation
+      const timeoutId = setTimeout(() => {
+        evaluateAlerts();
+      }, 1000);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [evaluateAlerts, alerts, priceData]);
+  }, [priceData]); // Remove 'alerts' and 'evaluateAlerts' from dependencies
 
   // Set up periodic evaluation (every 5 minutes for demo - in production this would be backend)
   useEffect(() => {
@@ -114,7 +123,7 @@ export function useAlertEvaluator() {
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, [evaluateAlerts, alerts]);
+  }, []); // Remove dependencies to prevent recreating interval
 
   return {
     triggerEvaluation,
