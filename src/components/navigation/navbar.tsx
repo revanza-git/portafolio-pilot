@@ -1,54 +1,62 @@
 "use client";
 
 import { Link, useLocation } from 'react-router-dom';
-import { TrendingUp, Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { TrendingUp, Menu, X } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { WalletConnectButton } from '@/components/wallet/wallet-connect-button';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Yield', href: '/yield' },
-  { name: 'Bridge', href: '/bridge' },
   { name: 'Analytics', href: '/analytics' },
+  { name: 'Swap', href: '/swap' },
+  { name: 'Bridge', href: '/bridge' },
+  { name: 'Yield', href: '/yield' },
   { name: 'Transactions', href: '/transactions' },
   { name: 'Approvals', href: '/approvals' },
-  { name: 'Swap', href: '/swap' },
   { name: 'Alerts', href: '/alerts' },
   { name: 'Watchlist', href: '/watchlist' },
 ];
 
 export function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
+
+  const isActiveRoute = (href: string) => {
+    return location.pathname === href;
+  };
 
   return (
-    <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+          <Link 
+            to="/" 
+            className="flex items-center space-x-2 font-bold text-xl text-foreground hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+            aria-label="DeFi Portfolio Home"
+          >
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-glow">
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              DeFi Portfolio
-            </span>
+            <span className="hidden sm:block">DeFi Portfolio</span>
           </Link>
 
-          {/* Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-1">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "text-sm font-medium transition-colors hover:text-primary",
-                  location.pathname === item.href
-                    ? "text-primary"
-                    : "text-muted-foreground"
+                  "px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  isActiveRoute(item.href)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
+                aria-current={isActiveRoute(item.href) ? 'page' : undefined}
               >
                 {item.name}
               </Link>
@@ -56,20 +64,61 @@ export function Navbar() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-4">
+            <ThemeToggle />
+            <WalletConnectButton />
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="lg:hidden flex items-center space-x-2">
+            <ThemeToggle />
             <Button
               variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              size="sm"
+              onClick={() => setIsOpen(!isOpen)}
+              className="h-9 w-9 p-0"
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isOpen}
             >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
+              {isOpen ? (
+                <X className="h-5 w-5" aria-hidden="true" />
+              ) : (
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              )}
             </Button>
-            <WalletConnectButton />
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {isOpen && (
+        <div className="lg:hidden animate-fade-in" role="menu">
+          <div className="px-2 pt-2 pb-3 space-y-1 bg-background/95 backdrop-blur-sm border-t border-border">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  "block px-3 py-2 rounded-md text-base font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  isActiveRoute(item.href)
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+                onClick={() => setIsOpen(false)}
+                role="menuitem"
+                aria-current={isActiveRoute(item.href) ? 'page' : undefined}
+              >
+                {item.name}
+              </Link>
+            ))}
+            <div className="pt-4 pb-2 border-t border-border mt-4">
+              <div className="px-3">
+                <WalletConnectButton />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

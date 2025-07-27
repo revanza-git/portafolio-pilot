@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function PnLChart() {
@@ -52,7 +53,7 @@ export function PnLChart() {
   };
 
   return (
-    <Card>
+    <Card className="bg-gradient-card shadow-elegant border-0">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Profit & Loss</CardTitle>
@@ -73,7 +74,7 @@ export function PnLChart() {
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
+            <LineChart data={data} className="animate-fade-in">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="timestamp"

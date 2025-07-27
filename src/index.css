@@ -6,134 +6,161 @@
 
 @layer base {
   :root {
-    /* Light theme */
-    --background: 220 13% 97%;
-    --foreground: 222 15% 11%;
+    /* Light theme - Enhanced Professional DeFi */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 15% 11%;
+    --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 15% 11%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 235 69% 61%;
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 220 13% 91%;
-    --secondary-foreground: 222 15% 11%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
 
-    --muted: 220 13% 91%;
-    --muted-foreground: 215 25% 27%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 235 69% 61%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
 
-    --destructive: 0 73% 58%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --success: 142 76% 36%;
     --success-foreground: 210 40% 98%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 222 15% 11%;
+    --warning-foreground: 222.2 84% 4.9%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 235 69% 61%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
 
     --radius: 0.75rem;
 
-    /* DeFi specific colors */
+    /* DeFi specific semantic colors */
     --profit: 142 76% 36%;
-    --loss: 0 73% 58%;
-    --neutral: 220 9% 46%;
+    --loss: 0 84.2% 60.2%;
+    --neutral: 215.4 16.3% 46.9%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(235 69% 61%), hsl(260 69% 61%));
-    --gradient-accent: linear-gradient(135deg, hsl(235 69% 61% / 0.1), hsl(260 69% 61% / 0.1));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 13% 97%));
+    /* Enhanced gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(221.2 83.2% 53.3%), hsl(262.1 83.3% 57.8%));
+    --gradient-secondary: linear-gradient(135deg, hsl(210 40% 96%), hsl(214.3 31.8% 91.4%));
+    --gradient-accent: linear-gradient(135deg, hsl(221.2 83.2% 53.3% / 0.1), hsl(262.1 83.3% 57.8% / 0.1));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-muted: linear-gradient(180deg, hsl(210 40% 98%), hsl(210 40% 96%));
 
-    /* Shadows */
-    --shadow-soft: 0 2px 8px -1px hsl(235 69% 61% / 0.1);
-    --shadow-card: 0 4px 12px -2px hsl(220 13% 91% / 0.8);
-    --shadow-glow: 0 0 20px hsl(235 69% 61% / 0.3);
+    /* Enhanced shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
+    --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+    --shadow-glow: 0 0 0 1px hsl(221.2 83.2% 53.3% / 0.05), 0 1px 3px hsl(221.2 83.2% 53.3% / 0.1);
+    --shadow-card: var(--shadow-md);
+    --shadow-elevated: var(--shadow-lg);
 
+    /* Typography scale */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+
+    /* Spacing scale */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    /* Dark theme - Professional DeFi */
-    --background: 222 15% 6%;
+    /* Dark theme - Enhanced Professional DeFi */
+    --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    --card: 222 15% 8%;
+    --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 15% 8%;
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 235 69% 61%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
 
-    --secondary: 222 15% 12%;
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 222 15% 12%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 235 69% 61%;
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 73% 58%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --success: 142 76% 36%;
     --success-foreground: 210 40% 98%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 222 15% 6%;
+    --warning-foreground: 222.2 84% 4.9%;
 
-    --border: 222 15% 15%;
-    --input: 222 15% 15%;
-    --ring: 235 69% 61%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 217.2 91.2% 59.8%;
 
-    /* DeFi specific colors - dark mode */
+    /* DeFi specific semantic colors - dark mode */
     --profit: 142 76% 36%;
-    --loss: 0 73% 58%;
-    --neutral: 220 9% 46%;
+    --loss: 0 62.8% 30.6%;
+    --neutral: 215 20.2% 65.1%;
 
-    /* Gradients - dark mode */
-    --gradient-primary: linear-gradient(135deg, hsl(235 69% 61%), hsl(260 69% 61%));
-    --gradient-accent: linear-gradient(135deg, hsl(235 69% 61% / 0.2), hsl(260 69% 61% / 0.2));
-    --gradient-card: linear-gradient(135deg, hsl(222 15% 8%), hsl(222 15% 10%));
+    /* Enhanced gradients - dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(217.2 91.2% 59.8%), hsl(262.1 83.3% 57.8%));
+    --gradient-secondary: linear-gradient(135deg, hsl(217.2 32.6% 17.5%), hsl(215 27.9% 16.9%));
+    --gradient-accent: linear-gradient(135deg, hsl(217.2 91.2% 59.8% / 0.1), hsl(262.1 83.3% 57.8% / 0.1));
+    --gradient-card: linear-gradient(135deg, hsl(222.2 84% 4.9%), hsl(217.2 32.6% 17.5%));
+    --gradient-muted: linear-gradient(180deg, hsl(217.2 32.6% 17.5%), hsl(215 27.9% 16.9%));
 
-    /* Shadows - dark mode */
-    --shadow-soft: 0 2px 8px -1px hsl(0 0% 0% / 0.5);
-    --shadow-card: 0 4px 12px -2px hsl(0 0% 0% / 0.3);
-    --shadow-glow: 0 0 20px hsl(235 69% 61% / 0.4);
+    /* Enhanced shadows - dark mode */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.4), 0 1px 2px -1px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.4), 0 2px 4px -2px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -4px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 8px 10px -6px hsl(0 0% 0% / 0.4);
+    --shadow-glow: 0 0 0 1px hsl(217.2 91.2% 59.8% / 0.1), 0 1px 3px hsl(217.2 91.2% 59.8% / 0.2);
+    --shadow-card: var(--shadow-md);
+    --shadow-elevated: var(--shadow-lg);
 
-    --sidebar-background: 222 15% 8%;
+    /* Sidebar - dark mode */
+    --sidebar-background: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 235 69% 61%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 222 15% 12%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 222.2 84% 4.9%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 15% 15%;
-    --sidebar-ring: 235 69% 61%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -143,6 +170,133 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Enhanced focus rings for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+
+  /* Typography improvements */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl;
+  }
+
+  h2 {
+    @apply text-3xl;
+  }
+
+  h3 {
+    @apply text-2xl;
+  }
+
+  h4 {
+    @apply text-xl;
+  }
+
+  h5 {
+    @apply text-lg;
+  }
+
+  h6 {
+    @apply text-base;
+  }
+
+  /* Enhanced animations */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.4s ease-out;
+  }
+
+  /* Utility classes */
+  .text-gradient {
+    @apply bg-gradient-primary bg-clip-text text-transparent;
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
   }
 }
