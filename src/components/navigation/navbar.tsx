@@ -9,9 +9,14 @@ import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Yield', href: '/yield' },
+  { name: 'Bridge', href: '/bridge' },
+  { name: 'Analytics', href: '/analytics' },
   { name: 'Transactions', href: '/transactions' },
   { name: 'Approvals', href: '/approvals' },
   { name: 'Swap', href: '/swap' },
+  { name: 'Alerts', href: '/alerts' },
+  { name: 'Watchlist', href: '/watchlist' },
 ];
 
 export function Navbar() {
