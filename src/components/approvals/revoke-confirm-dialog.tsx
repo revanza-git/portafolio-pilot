@@ -1,4 +1,4 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,6 +10,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Allowance } from '@/stores/portfolio';
+import { useRevokeAllowance } from '@/hooks/use-revoke-allowance';
+import { Address } from 'viem';
 
 interface RevokeConfirmDialogProps {
   isOpen: boolean;
@@ -24,6 +26,24 @@ export function RevokeConfirmDialog({
   onConfirm, 
   allowance 
 }: RevokeConfirmDialogProps) {
+  const { revokeAllowance, isLoading, isSuccess, error } = useRevokeAllowance();
+
+  const handleConfirm = async () => {
+    if (!allowance) return;
+    
+    await revokeAllowance({
+      tokenAddress: allowance.token.address as Address,
+      spenderAddress: allowance.spender.address as Address,
+      tokenSymbol: allowance.token.symbol,
+      spenderName: allowance.spender.name,
+    });
+    
+    if (!error) {
+      onConfirm();
+      onClose();
+    }
+  };
+
   if (!allowance) return null;
 
   return (
@@ -58,12 +78,22 @@ export function RevokeConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel onClick={onClose} disabled={isLoading}>
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction 
-            onClick={onConfirm}
+            onClick={handleConfirm}
+            disabled={isLoading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Revoke Allowance
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Revoking...
+              </>
+            ) : (
+              'Revoke Allowance'
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Wallet, ChevronDown, Copy, ExternalLink, LogOut } from 'lucide-react';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,35 +11,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useWalletStore } from '@/stores/wallet';
 import { useToast } from '@/hooks/use-toast';
 
 export function WalletConnectButton() {
-  const [isConnecting, setIsConnecting] = useState(false);
-  const { address, isConnected, setWallet, disconnect } = useWalletStore();
+  const { address, isConnected, chainId } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
   const { toast } = useToast();
 
   const handleConnect = async () => {
-    setIsConnecting(true);
     try {
-      // TODO: Implement wagmi connection
-      // Mock connection for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockAddress = '0x742d35Cc6464D4A4B0D2A4e8C26B5e4B4B5e4F3d';
-      setWallet(mockAddress, 1);
-      
-      toast({
-        title: "Wallet Connected",
-        description: "Successfully connected to MetaMask",
-      });
+      const connector = connectors.find(c => c.name === 'MetaMask') || connectors[0];
+      if (connector) {
+        connect({ connector });
+      }
     } catch (error) {
       toast({
         title: "Connection Failed",
         description: "Failed to connect wallet. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsConnecting(false);
     }
   };
 
@@ -68,12 +60,11 @@ export function WalletConnectButton() {
     return (
       <Button 
         onClick={handleConnect}
-        disabled={isConnecting}
         className="bg-gradient-primary hover:opacity-90 transition-opacity"
         size="lg"
       >
         <Wallet className="mr-2 h-4 w-4" />
-        {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+        Connect Wallet
       </Button>
     );
   }

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useYieldPools } from '@/hooks/use-market-data';
+import { useClaimRewards, useBatchClaimRewards } from '@/hooks/use-claim-rewards';
 
 interface Pool {
   id: string;
@@ -23,14 +24,33 @@ interface Pool {
 export function PoolTable() {
   const [filter, setFilter] = useState('all');
   const { data: pools = [], isLoading } = useYieldPools(filter === 'all' ? undefined : filter);
+  const { claimRewards, isLoading: isClaimLoading } = useClaimRewards();
+  const { batchClaimRewards, isLoading: isBatchLoading, progress } = useBatchClaimRewards();
 
   const filteredPools = pools.filter(pool => 
     filter === 'all' || pool.chain.toLowerCase().includes(filter.toLowerCase())
   );
 
-  const handleClaim = (poolId: string) => {
+  const handleClaim = async (poolId: string, protocol: string) => {
     console.log('Claiming rewards for pool:', poolId);
-    // TODO: Implement claim transaction
+    
+    await claimRewards({
+      protocol: protocol.toLowerCase() as 'aave' | 'compound' | 'uniswap',
+      poolId,
+    });
+  };
+
+  const handleClaimAll = async () => {
+    const claimablePool = pools.filter(pool => pool.rewards > 0);
+    
+    if (claimablePool.length === 0) return;
+    
+    const claimParams = claimablePool.map(pool => ({
+      protocol: pool.protocol.toLowerCase() as 'aave' | 'compound' | 'uniswap',
+      poolId: pool.id,
+    }));
+    
+    await batchClaimRewards(claimParams);
   };
 
   const formatCurrency = (amount: number) => {
@@ -89,9 +109,9 @@ export function PoolTable() {
                 <SelectItem value="arbitrum">Arbitrum</SelectItem>
               </SelectContent>
             </Select>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={handleClaimAll} disabled={isBatchLoading}>
               <Gift className="h-4 w-4 mr-2" />
-              Claim All
+              {isBatchLoading ? `Claiming... (${Math.round(progress)}%)` : 'Claim All'}
             </Button>
           </div>
         </div>
@@ -151,10 +171,11 @@ export function PoolTable() {
                     {pool.rewards > 0 && (
                       <Button
                         size="sm"
-                        onClick={() => handleClaim(pool.id)}
+                        onClick={() => handleClaim(pool.id, pool.protocol)}
+                        disabled={isClaimLoading}
                         className="bg-gradient-primary hover:opacity-90"
                       >
-                        Claim
+                        {isClaimLoading ? 'Claiming...' : 'Claim'}
                       </Button>
                     )}
                     <Button variant="ghost" size="sm">
