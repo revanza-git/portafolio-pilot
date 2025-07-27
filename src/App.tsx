@@ -5,10 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from 'wagmi';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { AuthProvider } from "@/contexts/auth-context";
-import { FeatureFlagProvider } from "@/contexts/feature-flag-context";
+// import { AuthProvider } from "@/contexts/auth-context"; // Temporarily disabled
+// import { FeatureFlagProvider } from "@/contexts/feature-flag-context"; // Temporarily disabled
 import { config } from "@/lib/wagmi-config";
-import { SystemBanners } from "@/components/shared/system-banner";
+// import { SystemBanners } from "@/components/shared/system-banner"; // Temporarily disabled
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Yield from "./pages/Yield";
@@ -29,19 +29,22 @@ import { AdminGuard } from "@/components/admin/admin-guard";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  console.log('App: Starting to render...');
+  
+  return (
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
       {/* AuthProvider temporarily bypassed */}
       {/* <AuthProvider> */}
-        <FeatureFlagProvider>
+        {/* <FeatureFlagProvider> */}
           <ThemeProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
                 <div className="min-h-screen">
-                  <SystemBanners />
+                  {/* <SystemBanners /> */}
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/dashboard" element={<Dashboard />} />
@@ -66,10 +69,11 @@ const App = () => (
               </BrowserRouter>
             </TooltipProvider>
           </ThemeProvider>
-        </FeatureFlagProvider>
+        {/* </FeatureFlagProvider> */}
       {/* </AuthProvider> */}
     </QueryClientProvider>
   </WagmiProvider>
 );
+};
 
 export default App;
