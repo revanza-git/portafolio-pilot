@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
-import { SiweMessage } from 'siwe';
+// import { SiweMessage } from 'siwe'; // Temporarily disabled
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -128,18 +128,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const origin = window.location.origin;
       const statement = 'Sign in with Ethereum to DeFi Portfolio';
 
-      const message = new SiweMessage({
-        domain,
-        address,
-        statement,
-        uri: origin,
-        version: '1',
-        chainId: 1, // Ethereum mainnet
-        nonce,
-        issuedAt: new Date().toISOString(),
-      });
+      // Temporarily disabled SIWE message creation
+      // const message = new SiweMessage({
+      //   domain,
+      //   address,
+      //   statement,
+      //   uri: origin,
+      //   version: '1',
+      //   chainId: 1, // Ethereum mainnet
+      //   nonce,
+      //   issuedAt: new Date().toISOString(),
+      // });
 
-      const messageToSign = message.prepareMessage();
+      const messageToSign = 'Temporarily disabled for testing';
 
       // Step 3: Sign the message
       const signature = await signMessageAsync({
