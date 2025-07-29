@@ -1,24 +1,337 @@
-# Logs
-logs
-*.log
+# ===================================
+# Environment Variables
+# ===================================
+.env
+.env.local
+.env.production
+.env.staging
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===================================
+# Claude Code
+# ===================================
+.claude/
+
+# ===================================
+# Node.js & Frontend
+# ===================================
+# Dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+.pnpm-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+
+# Logs
+logs/
+*.log
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Vite
+.vite/
 *.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# ===================================
+# Go Backend
+# ===================================
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+backend/api
+backend/worker
+backend/api.exe
+backend/worker.exe
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+*.prof
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Air live reload
+tmp/
+
+# ===================================
+# Database & Infrastructure
+# ===================================
+# PostgreSQL
+*.sql~
+pg_log/
+postgres-data/
+pgdata/
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Redis
+redis-data/
+dump.rdb
+
+# Database migrations backup
+*.backup
+
+# ===================================
+# Docker & Deployment
+# ===================================
+# Docker volumes and data
+docker-data/
+.docker/
+docker-compose.override.yml
+
+# Kubernetes
+*.kubeconfig
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# ===================================
+# Operating System
+# ===================================
+# macOS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===================================
+# IDEs & Editors
+# ===================================
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# JetBrains IDEs
+.idea/
+*.swp
+*.swo
+*~
+
+# Vim
+*.swp
+*.swo
+*.tmp
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+
+# ===================================
+# Package Managers & Lock Files
+# ===================================
+# Keep lock files for reproducible builds
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# But ignore backup lock files
+package-lock.json.backup
+yarn.lock.backup
+
+# ===================================
+# Testing & Coverage
+# ===================================
+# Test results
+test-results/
+test-reports/
+coverage/
+.nyc_output/
+*.lcov
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# ===================================
+# Build Tools & Cache
+# ===================================
+# Webpack
+.webpack/
+
+# Parcel
+.parcel-cache/
+
+# Next.js
+.next/
+
+# Nuxt.js
+.nuxt/
+
+# Gatsby
+.cache/
+public/
+
+# SvelteKit
+.svelte-kit/
+
+# Cache directories
+.cache/
+.tmp/
+.temp/
+
+# ===================================
+# Documentation & Generated Files
+# ===================================
+# Auto-generated documentation
+docs/.vuepress/dist/
+.docusaurus/
+
+# Storybook
+storybook-static/
+
+# ===================================
+# Security & Keys
+# ===================================
+# Private keys and certificates
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# API keys and secrets (additional safety)
+*secrets*
+*keys*
+.secrets/
+
+# ===================================
+# Monitoring & Logs
+# ===================================
+# Application logs
+logs/
+*.log
+access.log
+error.log
+
+# Performance monitoring
+.trace
+*.trace
+
+# ===================================
+# Miscellaneous
+# ===================================
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Temporary folders
+tmp/
+temp/
