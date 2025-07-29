@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useWalletStore } from '@/stores/wallet';
+import { useAuth } from '@/contexts/auth-context';
 
 export function WalletConnectButton() {
   const { address, isConnected, chainId } = useAccount();
@@ -20,16 +21,23 @@ export function WalletConnectButton() {
   const { disconnect } = useDisconnect();
   const { toast } = useToast();
   const { setWallet, disconnect: disconnectStore } = useWalletStore();
+  const { signIn, signOut, isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Sync wagmi state with zustand store
+  // Sync wagmi state with zustand store and trigger authentication
   useEffect(() => {
-    console.log('Wallet state change:', { address, isConnected, chainId });
+    console.log('Wallet state change:', { address, isConnected, chainId, isAuthenticated });
     if (isConnected && address && chainId) {
       setWallet(address, chainId);
+      
+      // Auto-trigger SIWE authentication if wallet connected but not authenticated
+      if (!isAuthenticated && !authLoading) {
+        console.log('Wallet connected but not authenticated, triggering SIWE...');
+        signIn().catch(console.error);
+      }
     } else if (!isConnected) {
       disconnectStore();
     }
-  }, [isConnected, address, chainId, setWallet, disconnectStore]);
+  }, [isConnected, address, chainId, isAuthenticated, authLoading, setWallet, disconnectStore, signIn]);
 
   const handleConnect = async () => {
     try {
@@ -50,6 +58,7 @@ export function WalletConnectButton() {
   const handleDisconnect = () => {
     disconnect();
     disconnectStore();
+    signOut(); // Clear authentication state
     toast({
       title: "Wallet Disconnected",
       description: "Your wallet has been disconnected",
@@ -83,11 +92,36 @@ export function WalletConnectButton() {
     );
   }
 
+  // Show authentication loading state
+  if (isConnected && !isAuthenticated && authLoading) {
+    return (
+      <Button variant="outline" className="gap-2" disabled>
+        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+        Authenticating...
+      </Button>
+    );
+  }
+
+  // Show unauthenticated state (shouldn't happen with auto-auth but just in case)
+  if (isConnected && !isAuthenticated) {
+    return (
+      <Button 
+        onClick={() => signIn().catch(console.error)}
+        variant="outline" 
+        className="gap-2"
+      >
+        <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+        Sign Message
+      </Button>
+    );
+  }
+
+  // Fully authenticated state
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-2">
-          <div className="w-2 h-2 bg-success rounded-full" />
+          <div className="w-2 h-2 bg-green-500 rounded-full" />
           {formatAddress(address)}
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>

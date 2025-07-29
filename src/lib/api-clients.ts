@@ -145,7 +145,9 @@ export class DefiLlamaClient {
 // Token ID mappings for CoinGecko
 export const TOKEN_IDS = {
   'ethereum': 'ethereum',
+  'eth': 'ethereum', // Common alias
   'bitcoin': 'bitcoin',
+  'btc': 'bitcoin', // Common alias
   'usdc': 'usd-coin',
   'usdt': 'tether',
   'uni': 'uniswap',

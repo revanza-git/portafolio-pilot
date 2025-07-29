@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { WalletConnectButton } from '@/components/wallet/wallet-connect-button';
 import { useWalletStore } from '@/stores/wallet';
+import { useAuth } from '@/contexts/auth-context';
 
 const Index = () => {
   const { isConnected } = useWalletStore();
+  const { isAuthenticated } = useAuth();
 
-  // Redirect to dashboard if already connected
-  if (isConnected) {
+  // Redirect to dashboard only if wallet is connected AND authenticated with backend
+  if (isConnected && isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
 

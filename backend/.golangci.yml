@@ -1,0 +1,41 @@
+linters:
+  enable:
+    - gofmt
+    - golint
+    - govet
+    - gocyclo
+    - ineffassign
+    - misspell
+    - unparam
+    - nakedret
+    - prealloc
+    - scopelint
+    - gocritic
+    - goimports
+    - revive
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  golint:
+    min-confidence: 0.8
+  govet:
+    check-shadowing: true
+  misspell:
+    locale: US
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+
+run:
+  skip-dirs:
+    - internal/db # Generated sqlc code
+    - internal/api # Generated OpenAPI code
+  skip-files:
+    - ".*\\.gen\\.go$"

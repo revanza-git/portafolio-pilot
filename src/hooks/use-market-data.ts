@@ -13,7 +13,8 @@ export function useTokenPrices(tokens: string[]) {
           .filter(Boolean);
         
         if (tokenIds.length === 0) {
-          throw new Error('No valid token IDs found');
+          // Silently return fallback data when no valid token IDs (common during loading)
+          return getFallbackPrices(tokens);
         }
 
         const prices = await coinGeckoClient.getTokenPrices(tokenIds);
@@ -37,6 +38,7 @@ export function useTokenPrices(tokens: string[]) {
         return getFallbackPrices(tokens);
       }
     },
+    enabled: tokens.length > 0, // Only run query when we have tokens
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     retry: 3,
@@ -143,18 +145,39 @@ export function useProtocolTVL(protocol: string) {
 
 // Portfolio data with real prices
 export function usePortfolioWithRealPrices(tokens: TokenBalance[]) {
-  const tokenSymbols = tokens.map(t => t.symbol);
+  const tokenSymbols = (tokens || []).map(t => t?.symbol).filter(Boolean);
   const { data: prices, isLoading: pricesLoading } = useTokenPrices(tokenSymbols);
   
   return useQuery({
     queryKey: ['portfolio-real-prices', tokens, prices],
     queryFn: async () => {
+      // Handle empty tokens case
+      if (!tokens || tokens.length === 0) {
+        return { tokens: [], totalValue: 0, change24h: 0 };
+      }
+      
       if (!prices) return { tokens, totalValue: 0, change24h: 0 };
       
       const updatedTokens = tokens.map(token => {
+        // Safe property access
+        if (!token?.symbol || !token?.balanceFormatted) return token;
+        
         const priceData = prices[token.symbol];
         if (priceData) {
-          const newUsdValue = parseFloat(token.balanceFormatted.replace(/,/g, '')) * priceData.price;
+          const balanceNum = parseFloat((token.balanceFormatted || '0').replace(/,/g, ''));
+          
+          // Safety check to prevent astronomical values
+          if (balanceNum > 1000000000) { // More than 1 billion tokens seems unrealistic
+            console.warn(`Suspicious balance for ${token.symbol}: ${balanceNum}. Using 0 instead.`);
+            return {
+              ...token,
+              priceUsd: priceData.price,
+              change24h: priceData.change24h,
+              usdValue: 0,
+            };
+          }
+          
+          const newUsdValue = balanceNum * priceData.price;
           return {
             ...token,
             priceUsd: priceData.price,
@@ -165,10 +188,17 @@ export function usePortfolioWithRealPrices(tokens: TokenBalance[]) {
         return token;
       });
       
-      const totalValue = updatedTokens.reduce((sum, token) => sum + token.usdValue, 0);
+      const totalValue = updatedTokens.reduce((sum, token) => sum + (token?.usdValue || 0), 0);
       const totalValueYesterday = updatedTokens.reduce((sum, token) => {
+        if (!token?.priceUsd || !token?.change24h || !token?.balanceFormatted) return sum;
+        
         const yesterdayPrice = token.priceUsd / (1 + token.change24h / 100);
-        const yesterdayValue = parseFloat(token.balanceFormatted.replace(/,/g, '')) * yesterdayPrice;
+        const balanceNum = parseFloat(token.balanceFormatted.replace(/,/g, ''));
+        
+        // Safety check for yesterday's calculation too
+        if (balanceNum > 1000000000) return sum;
+        
+        const yesterdayValue = balanceNum * yesterdayPrice;
         return sum + yesterdayValue;
       }, 0);
       
@@ -180,13 +210,18 @@ export function usePortfolioWithRealPrices(tokens: TokenBalance[]) {
         change24h,
       };
     },
-    enabled: !pricesLoading && !!prices,
+    enabled: tokens.length > 0 && (!pricesLoading || !!prices), // Improved enable condition
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 }
 
 // Fallback data functions (in case APIs fail)
 function getFallbackPrices(tokens: string[]) {
+  // Handle empty tokens array
+  if (!tokens || tokens.length === 0) {
+    return {};
+  }
+  
   const fallbackPrices: Record<string, { price: number; change24h: number }> = {
     'ETH': { price: 2458.30, change24h: 2.5 },
     'USDC': { price: 1.00, change24h: 0.01 },
@@ -196,10 +231,12 @@ function getFallbackPrices(tokens: string[]) {
   };
   
   return Object.fromEntries(
-    tokens.map(token => [
-      token.toUpperCase(),
-      fallbackPrices[token.toUpperCase()] || { price: 1, change24h: 0 }
-    ])
+    tokens
+      .filter(token => token && typeof token === 'string')
+      .map(token => [
+        token.toUpperCase(),
+        fallbackPrices[token.toUpperCase()] || { price: 1, change24h: 0 }
+      ])
   );
 }
 

@@ -1,0 +1,91 @@
+# Development Docker Compose - Infrastructure Services Only
+# Use this for local development with hot reloading
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: defi-dashboard-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-defi}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-defi123}
+      POSTGRES_DB: ${DB_NAME:-defi_dashboard}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-defi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Database Migration Service
+  migrate:
+    image: migrate/migrate:latest
+    container_name: defi-dashboard-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/db/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@localhost:5432/${DB_NAME:-defi_dashboard}?sslmode=disable",
+      "up"
+    ]
+    network_mode: host
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: defi-dashboard-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Backend API (temporary for testing)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: defi-dashboard-api
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://defi:defi123@postgres:5432/defi_dashboard?sslmode=disable
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - REDIS_URL=redis://redis:6379
+      - PORT=3000
+      - LOG_LEVEL=debug
+      - ALLOW_ORIGINS=http://localhost:5173,http://localhost:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # pgAdmin for database management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: defi-dashboard-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@defiportfolio.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:

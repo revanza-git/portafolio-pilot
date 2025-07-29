@@ -1,0 +1,25 @@
+{
+  "name": "@defip/api-client",
+  "version": "1.0.0",
+  "description": "TypeScript client for DeFi Dashboard API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "generate": "openapi-typescript ../../spec/openapi.yaml -o src/types.ts && npm run format",
+    "format": "prettier --write src/**/*.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "openapi-typescript": "^7.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

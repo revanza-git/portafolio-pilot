@@ -1,0 +1,1395 @@
+openapi: 3.1.0
+info:
+  title: DeFi Dashboard API
+  version: 1.0.0
+  description: Backend API for DeFi portfolio tracking and management
+  contact:
+    name: API Support
+    email: api@defi-dashboard.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.defi-dashboard.com/v1
+    description: Production server
+  - url: http://localhost:3000/v1
+    description: Development server
+
+tags:
+  - name: auth
+    description: Authentication endpoints using Sign-In with Ethereum (SIWE)
+  - name: portfolio
+    description: Portfolio balances and history
+  - name: transactions
+    description: Transaction history and approval management
+  - name: yield
+    description: Yield pools and positions
+  - name: bridge
+    description: Bridge routes for cross-chain transfers
+  - name: swap
+    description: Token swap quotes and execution
+  - name: analytics
+    description: Analytics and reporting
+  - name: alerts
+    description: Price and event alerts
+  - name: watchlist
+    description: Token and address watchlists
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    page:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    limit:
+      name: limit
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    chainId:
+      name: chainId
+      in: query
+      description: Blockchain network ID
+      schema:
+        type: integer
+        enum: [1, 10, 56, 137, 8453, 42161]
+    address:
+      name: address
+      in: path
+      description: Ethereum address
+      required: true
+      schema:
+        type: string
+        pattern: '^0x[a-fA-F0-9]{40}$'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+      required:
+        - code
+        - message
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    SiweMessage:
+      type: object
+      properties:
+        domain:
+          type: string
+        address:
+          type: string
+        statement:
+          type: string
+        uri:
+          type: string
+        version:
+          type: string
+        chainId:
+          type: integer
+        nonce:
+          type: string
+        issuedAt:
+          type: string
+        expirationTime:
+          type: string
+      required:
+        - domain
+        - address
+        - statement
+        - uri
+        - version
+        - chainId
+        - nonce
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        address:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+        email:
+          type: string
+          format: email
+        lastLoginAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - address
+        - createdAt
+        - updatedAt
+
+    NonceRequest:
+      type: object
+      properties:
+        address:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+      required:
+        - address
+
+    NonceResponse:
+      type: object
+      properties:
+        nonce:
+          type: string
+        message:
+          type: string
+          description: Pre-formatted SIWE message ready for signing
+      required:
+        - nonce
+        - message
+
+    VerifyRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Complete SIWE message string
+        signature:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{130}$'
+      required:
+        - message
+        - signature
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT access token
+        expiresIn:
+          type: integer
+          description: Token expiration time in seconds
+        address:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - token
+        - expiresIn
+        - address
+        - user
+
+    UserProfileResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        address:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+      required:
+        - user
+        - address
+
+    MagicLinkRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+        - email
+
+    MagicLinkResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        magicLink:
+          type: string
+          description: Magic link URL (development only)
+      required:
+        - message
+
+    Token:
+      type: object
+      properties:
+        address:
+          type: string
+        symbol:
+          type: string
+        name:
+          type: string
+        decimals:
+          type: integer
+        chainId:
+          type: integer
+        logoUri:
+          type: string
+        price:
+          type: number
+        priceChange24h:
+          type: number
+      required:
+        - address
+        - symbol
+        - decimals
+        - chainId
+
+    Balance:
+      type: object
+      properties:
+        token:
+          $ref: '#/components/schemas/Token'
+        balance:
+          type: string
+        balanceUsd:
+          type: number
+        allocation:
+          type: number
+      required:
+        - token
+        - balance
+        - balanceUsd
+
+    PortfolioHistory:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        totalValue:
+          type: number
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/Balance'
+
+    Transaction:
+      type: object
+      properties:
+        hash:
+          type: string
+        chainId:
+          type: integer
+        from:
+          type: string
+        to:
+          type: string
+        value:
+          type: string
+        gas:
+          type: string
+        gasPrice:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, confirmed, failed]
+        type:
+          type: string
+          enum: [send, receive, swap, approve, bridge, stake, unstake]
+        metadata:
+          type: object
+      required:
+        - hash
+        - chainId
+        - from
+        - to
+        - timestamp
+        - status
+        - type
+
+    TokenApproval:
+      type: object
+      properties:
+        token:
+          $ref: '#/components/schemas/Token'
+        spender:
+          type: string
+        spenderName:
+          type: string
+        allowance:
+          type: string
+        allowanceUsd:
+          type: number
+        lastUpdated:
+          type: string
+          format: date-time
+      required:
+        - token
+        - spender
+        - allowance
+
+    YieldPool:
+      type: object
+      properties:
+        id:
+          type: string
+        protocol:
+          type: string
+        name:
+          type: string
+        chainId:
+          type: integer
+        apy:
+          type: number
+        tvl:
+          type: number
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/Token'
+        risks:
+          type: array
+          items:
+            type: string
+            enum: [impermanent_loss, smart_contract, oracle, liquidation]
+      required:
+        - id
+        - protocol
+        - name
+        - chainId
+        - apy
+        - tvl
+        - tokens
+
+    YieldPosition:
+      type: object
+      properties:
+        pool:
+          $ref: '#/components/schemas/YieldPool'
+        balance:
+          type: string
+        balanceUsd:
+          type: number
+        rewards:
+          type: array
+          items:
+            type: object
+            properties:
+              token:
+                $ref: '#/components/schemas/Token'
+              amount:
+                type: string
+              amountUsd:
+                type: number
+        entryTime:
+          type: string
+          format: date-time
+        pnl:
+          type: number
+        pnlPercentage:
+          type: number
+      required:
+        - pool
+        - balance
+        - balanceUsd
+
+    BridgeRoute:
+      type: object
+      properties:
+        id:
+          type: string
+        fromChain:
+          type: integer
+        toChain:
+          type: integer
+        fromToken:
+          $ref: '#/components/schemas/Token'
+        toToken:
+          $ref: '#/components/schemas/Token'
+        bridge:
+          type: string
+        estimatedTime:
+          type: integer
+        fee:
+          type: number
+        feeUsd:
+          type: number
+      required:
+        - id
+        - fromChain
+        - toChain
+        - fromToken
+        - toToken
+        - bridge
+        - estimatedTime
+        - fee
+
+    PnLExport:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        totalPnl:
+          type: number
+        totalPnlPercentage:
+          type: number
+        transactions:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date-time
+              type:
+                type: string
+              asset:
+                type: string
+              amount:
+                type: number
+              price:
+                type: number
+              pnl:
+                type: number
+              fees:
+                type: number
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [price_above, price_below, large_transfer, approval, liquidity_change]
+        status:
+          type: string
+          enum: [active, triggered, expired, disabled]
+        target:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [token, address, pool]
+            identifier:
+              type: string
+            chainId:
+              type: integer
+        conditions:
+          type: object
+        notification:
+          type: object
+          properties:
+            email:
+              type: boolean
+            webhook:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        triggeredAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - type
+        - status
+        - target
+        - conditions
+        - createdAt
+
+    Watchlist:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [token, address, pool]
+              identifier:
+                type: string
+              chainId:
+                type: integer
+              metadata:
+                type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - items
+        - createdAt
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/siwe/nonce:
+    post:
+      tags:
+        - auth
+      summary: Generate SIWE nonce and message
+      description: |
+        Generates a cryptographically secure nonce and pre-formatted SIWE message for the given Ethereum address.
+        The nonce expires in 10 minutes and can only be used once.
+      operationId: getSiweNonce
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NonceRequest'
+            example:
+              address: "0x742d35Cc6573C42c8Ee90b4E43e04c1Fe9E2395d"
+      responses:
+        '200':
+          description: Nonce and SIWE message generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NonceResponse'
+              example:
+                nonce: "f1e2d3c4b5a6978889a0b1c2d3e4f5g6"
+                message: "localhost wants you to sign in with your Ethereum account:\n0x742d35Cc6573C42c8Ee90b4E43e04c1Fe9E2395d\n\nSign in to DeFi Portfolio Dashboard\n\nURI: https://localhost\nVersion: 1\nChain ID: 1\nNonce: f1e2d3c4b5a6978889a0b1c2d3e4f5g6\nIssued At: 2025-01-20T10:30:00.000Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/siwe/verify:
+    post:
+      tags:
+        - auth
+      summary: Verify SIWE signature and authenticate
+      description: |
+        Verifies the SIWE signature against the message and returns a JWT token if valid.
+        The nonce is consumed during verification and cannot be reused.
+      operationId: verifySiwe
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+            example:
+              message: "localhost wants you to sign in with your Ethereum account:\n0x742d35Cc6573C42c8Ee90b4E43e04c1Fe9E2395d\n\nSign in to DeFi Portfolio Dashboard\n\nURI: https://localhost\nVersion: 1\nChain ID: 1\nNonce: f1e2d3c4b5a6978889a0b1c2d3e4f5g6\nIssued At: 2025-01-20T10:30:00.000Z"
+              signature: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1b"
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                expiresIn: 86400
+                address: "0x742d35Cc6573C42c8Ee90b4E43e04c1Fe9E2395d"
+                user:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  address: "0x742d35Cc6573C42c8Ee90b4E43e04c1Fe9E2395d"
+                  createdAt: "2025-01-20T10:30:00.000Z"
+                  updatedAt: "2025-01-20T10:30:00.000Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /auth/me:
+    get:
+      tags:
+        - auth
+      summary: Get current authenticated user
+      description: Returns the profile information for the currently authenticated user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+              example:
+                user:
+                  id: "123e4567-e89b-12d3-a456-426614174000"
+                  address: "0x742d35Cc6573C42c8Ee90b4E43e04c1Fe9E2395d"
+                  email: "user@example.com"
+                  lastLoginAt: "2025-01-20T10:30:00.000Z"
+                  createdAt: "2025-01-20T10:25:00.000Z"
+                  updatedAt: "2025-01-20T10:30:00.000Z"
+                address: "0x742d35Cc6573C42c8Ee90b4E43e04c1Fe9E2395d"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/magic-link:
+    post:
+      tags:
+        - auth
+      summary: Send magic link authentication email (stub)
+      description: |
+        Stub implementation for email-based magic link authentication.
+        In development, returns the magic link URL for testing.
+        In production, only sends the email and returns a success message.
+      operationId: sendMagicLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MagicLinkRequest'
+            example:
+              email: "user@example.com"
+      responses:
+        '200':
+          description: Magic link sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MagicLinkResponse'
+              example:
+                message: "Magic link sent to your email"
+                magicLink: "https://your-domain.com/auth/verify-magic?token=abc123def456"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /portfolio/{address}/balances:
+    get:
+      tags:
+        - portfolio
+      summary: Get portfolio balances
+      operationId: getPortfolioBalances
+      parameters:
+        - $ref: '#/components/parameters/address'
+        - $ref: '#/components/parameters/chainId'
+        - name: hideSmall
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Portfolio balances
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalValue:
+                    type: number
+                  balances:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Balance'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /portfolio/{address}/history:
+    get:
+      tags:
+        - portfolio
+      summary: Get portfolio history
+      operationId: getPortfolioHistory
+      parameters:
+        - $ref: '#/components/parameters/address'
+        - $ref: '#/components/parameters/chainId'
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1d, 1w, 1m, 3m, 1y, all]
+            default: 1w
+        - name: interval
+          in: query
+          schema:
+            type: string
+            enum: [1h, 1d, 1w]
+            default: 1d
+      responses:
+        '200':
+          description: Portfolio history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PortfolioHistory'
+
+  /transactions/{address}:
+    get:
+      tags:
+        - transactions
+      summary: Get transaction history
+      operationId: getTransactions
+      parameters:
+        - $ref: '#/components/parameters/address'
+        - $ref: '#/components/parameters/chainId'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [send, receive, swap, approve, bridge, stake, unstake]
+      responses:
+        '200':
+          description: Transaction history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /transactions/{address}/approvals:
+    get:
+      tags:
+        - transactions
+      summary: Get token approvals
+      operationId: getTokenApprovals
+      parameters:
+        - $ref: '#/components/parameters/address'
+        - $ref: '#/components/parameters/chainId'
+        - name: active
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Token approvals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  approvals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TokenApproval'
+
+  /transactions/{address}/approvals/{token}:
+    delete:
+      tags:
+        - transactions
+      summary: Revoke token approval
+      operationId: revokeApproval
+      parameters:
+        - $ref: '#/components/parameters/address'
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: spender
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approval revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  txHash:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /yield/pools:
+    get:
+      tags:
+        - yield
+      summary: Get available yield pools
+      operationId: getYieldPools
+      parameters:
+        - $ref: '#/components/parameters/chainId'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+        - name: protocol
+          in: query
+          schema:
+            type: string
+        - name: minApy
+          in: query
+          schema:
+            type: number
+        - name: minTvl
+          in: query
+          schema:
+            type: number
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [apy, tvl, name]
+            default: apy
+      responses:
+        '200':
+          description: Yield pools
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/YieldPool'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /yield/positions/{address}:
+    get:
+      tags:
+        - yield
+      summary: Get yield positions
+      operationId: getYieldPositions
+      parameters:
+        - $ref: '#/components/parameters/address'
+        - $ref: '#/components/parameters/chainId'
+      responses:
+        '200':
+          description: Yield positions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalValue:
+                    type: number
+                  totalPnl:
+                    type: number
+                  positions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/YieldPosition'
+
+  /bridge/routes:
+    post:
+      tags:
+        - bridge
+      summary: Get bridge routes
+      operationId: getBridgeRoutes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromChain:
+                  type: integer
+                toChain:
+                  type: integer
+                fromToken:
+                  type: string
+                toToken:
+                  type: string
+                amount:
+                  type: string
+              required:
+                - fromChain
+                - toChain
+                - fromToken
+                - amount
+      responses:
+        '200':
+          description: Available bridge routes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  routes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BridgeRoute'
+
+  /swap/quote:
+    post:
+      tags:
+        - swap
+      summary: Get swap quotes
+      operationId: getSwapQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwapQuoteRequest'
+      responses:
+        '200':
+          description: Swap quotes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SwapRoute'
+
+  /swap/execute:
+    post:
+      tags:
+        - swap
+      summary: Execute swap transaction
+      operationId: executeSwap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                routeId:
+                  type: string
+                userAddress:
+                  type: string
+                  pattern: '^0x[a-fA-F0-9]{40}$'
+              required:
+                - routeId
+                - userAddress
+      responses:
+        '200':
+          description: Swap executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  txHash:
+                    type: string
+                required:
+                  - txHash
+
+  /analytics/export/{address}:
+    get:
+      tags:
+        - analytics
+      summary: Export P&L report
+      operationId: exportPnL
+      parameters:
+        - $ref: '#/components/parameters/address'
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+      responses:
+        '200':
+          description: P&L report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PnLExport'
+            text/csv:
+              schema:
+                type: string
+
+  /alerts:
+    get:
+      tags:
+        - alerts
+      summary: Get user alerts
+      operationId: getAlerts
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, triggered, expired, disabled]
+      responses:
+        '200':
+          description: User alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+    post:
+      tags:
+        - alerts
+      summary: Create alert
+      operationId: createAlert
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: [price_above, price_below, large_transfer, approval, liquidity_change]
+                target:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum: [token, address, pool]
+                    identifier:
+                      type: string
+                    chainId:
+                      type: integer
+                conditions:
+                  type: object
+                notification:
+                  type: object
+                  properties:
+                    email:
+                      type: boolean
+                    webhook:
+                      type: string
+              required:
+                - type
+                - target
+                - conditions
+      responses:
+        '201':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /alerts/{alertId}:
+    get:
+      tags:
+        - alerts
+      summary: Get alert by ID
+      operationId: getAlert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - alerts
+      summary: Update alert
+      operationId: updateAlert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [active, disabled]
+                conditions:
+                  type: object
+                notification:
+                  type: object
+      responses:
+        '200':
+          description: Alert updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - alerts
+      summary: Delete alert
+      operationId: deleteAlert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Alert deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /watchlists:
+    get:
+      tags:
+        - watchlist
+      summary: Get user watchlists
+      operationId: getWatchlists
+      responses:
+        '200':
+          description: User watchlists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  watchlists:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Watchlist'
+
+    post:
+      tags:
+        - watchlist
+      summary: Create watchlist
+      operationId: createWatchlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [token, address, pool]
+                      identifier:
+                        type: string
+                      chainId:
+                        type: integer
+                      metadata:
+                        type: object
+              required:
+                - name
+      responses:
+        '201':
+          description: Watchlist created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Watchlist'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /watchlists/{watchlistId}:
+    get:
+      tags:
+        - watchlist
+      summary: Get watchlist by ID
+      operationId: getWatchlist
+      parameters:
+        - name: watchlistId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Watchlist details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Watchlist'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - watchlist
+      summary: Update watchlist
+      operationId: updateWatchlist
+      parameters:
+        - name: watchlistId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Watchlist updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Watchlist'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - watchlist
+      summary: Delete watchlist
+      operationId: deleteWatchlist
+      parameters:
+        - name: watchlistId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Watchlist deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "VALIDATION_ERROR"
+            message: "Invalid request parameters"
+            details:
+              field: "address"
+              issue: "Invalid Ethereum address format"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "UNAUTHORIZED"
+            message: "Invalid or expired JWT token"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "NOT_FOUND"
+            message: "Resource not found"
+    InternalError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"

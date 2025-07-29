@@ -1,12 +1,17 @@
 import { ArrowUpRight, ArrowDownLeft, RefreshCw, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { usePortfolioStore } from '@/stores/portfolio';
 import { Link } from 'react-router-dom';
 
-export function RecentTransactions() {
+interface RecentTransactionsProps {
+  isLoading?: boolean;
+}
+
+export function RecentTransactions({ isLoading }: RecentTransactionsProps = {}) {
   const { transactions } = usePortfolioStore();
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = (transactions || []).slice(0, 5);
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -36,6 +41,34 @@ export function RecentTransactions() {
       return `${minutes}m ago`;
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Activity</CardTitle>
+            <Button variant="outline" size="sm" disabled>
+              View All
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-3">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-[250px]" />
+                  <Skeleton className="h-3 w-[200px]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAccount, useSignMessage } from 'wagmi';
-// import { SiweMessage } from 'siwe'; // Temporarily disabled
+import { useAPIClient } from '@/lib/api/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -43,6 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const { toast } = useToast();
+  const apiClient = useAPIClient();
 
   // Check for existing session on mount
   useEffect(() => {
@@ -67,32 +68,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       console.log('AuthContext: Token found, verifying with backend...');
+      apiClient.setAuthToken(token);
+      
       // Verify session with backend
-      const response = await fetch('/api/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiClient.getCurrentUser();
+      console.log('AuthContext: Session verified, user:', response.user);
+      
+      setAuthState({
+        user: response.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
       });
-
-      if (response.ok) {
-        const user = await response.json();
-        console.log('AuthContext: Session verified, user:', user);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null
-        });
-      } else {
-        console.log('AuthContext: Session invalid, clearing token');
-        // Invalid token, clear it
-        localStorage.removeItem('auth_token');
-        setAuthState(prev => ({ ...prev, isLoading: false }));
-      }
     } catch (error) {
       console.error('AuthContext: Auth session check failed:', error);
-      // Backend not available - continue without auth for now
-      console.log('AuthContext: Backend not available, continuing without auth');
+      // Invalid token, clear it
+      localStorage.removeItem('auth_token');
+      apiClient.clearAuthToken();
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -111,64 +103,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     try {
       // Step 1: Get nonce from backend
-      const nonceResponse = await fetch('/api/auth/nonce', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address })
-      });
+      const nonceData = await apiClient.getNonce(address);
+      const { nonce, message } = nonceData;
 
-      if (!nonceResponse.ok) {
-        throw new Error('Failed to get nonce');
-      }
-
-      const { nonce } = await nonceResponse.json();
-
-      // Step 2: Create SIWE message
-      const domain = window.location.host;
-      const origin = window.location.origin;
-      const statement = 'Sign in with Ethereum to DeFi Portfolio';
-
-      // Temporarily disabled SIWE message creation
-      // const message = new SiweMessage({
-      //   domain,
-      //   address,
-      //   statement,
-      //   uri: origin,
-      //   version: '1',
-      //   chainId: 1, // Ethereum mainnet
-      //   nonce,
-      //   issuedAt: new Date().toISOString(),
-      // });
-
-      const messageToSign = 'Temporarily disabled for testing';
-
-      // Step 3: Sign the message
+      // Step 2: Sign the SIWE message
       const signature = await signMessageAsync({
-        message: messageToSign,
+        message: message,
         account: address as `0x${string}`
       });
 
-      // Step 4: Verify signature with backend
-      const verifyResponse = await fetch('/api/auth/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: messageToSign,
-          signature,
-          address
-        })
-      });
+      // Step 3: Verify signature with backend
+      const authResponse = await apiClient.verifySiwe(message, signature);
+      console.log('AuthContext: Auth response received:', authResponse);
+      console.log('AuthContext: Token from response:', authResponse.token);
 
-      if (!verifyResponse.ok) {
-        throw new Error('Signature verification failed');
+      // Step 4: Store token and update state
+      if (authResponse.token) {
+        localStorage.setItem('auth_token', authResponse.token);
+        console.log('AuthContext: Token saved to localStorage');
+        
+        // Verify it was saved
+        const savedToken = localStorage.getItem('auth_token');
+        console.log('AuthContext: Verified token in localStorage:', !!savedToken);
+        
+        // Also update the API client explicitly
+        apiClient.setAuthToken(authResponse.token);
+        console.log('AuthContext: Updated API client with token');
+      } else {
+        console.error('AuthContext: No token in auth response!');
       }
-
-      const { user, token } = await verifyResponse.json();
-
-      // Step 5: Store token and update state
-      localStorage.setItem('auth_token', token);
+      
       setAuthState({
-        user,
+        user: authResponse.user,
         isAuthenticated: true,
         isLoading: false,
         error: null
@@ -176,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       toast({
         title: "Successfully signed in",
-        description: `Welcome back, ${user.address.slice(0, 6)}...${user.address.slice(-4)}`
+        description: `Welcome back, ${authResponse.user.address.slice(0, 6)}...${authResponse.user.address.slice(-4)}`
       });
 
     } catch (error) {
@@ -199,6 +165,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = () => {
     localStorage.removeItem('auth_token');
+    apiClient.clearAuthToken();
     setAuthState({
       user: null,
       isAuthenticated: false,

@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from 'wagmi';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-// import { AuthProvider } from "@/contexts/auth-context"; // Temporarily disabled
+import { AuthProvider } from "@/contexts/auth-context";
 // import { FeatureFlagProvider } from "@/contexts/feature-flag-context"; // Temporarily disabled
 import { config } from "@/lib/wagmi-config";
 // import { SystemBanners } from "@/components/shared/system-banner"; // Temporarily disabled
@@ -35,8 +35,7 @@ const App = () => {
   return (
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
-      {/* AuthProvider temporarily bypassed */}
-      {/* <AuthProvider> */}
+      <AuthProvider>
         {/* <FeatureFlagProvider> */}
           <ThemeProvider>
             <TooltipProvider>
@@ -70,7 +69,7 @@ const App = () => {
             </TooltipProvider>
           </ThemeProvider>
         {/* </FeatureFlagProvider> */}
-      {/* </AuthProvider> */}
+      </AuthProvider>
     </QueryClientProvider>
   </WagmiProvider>
 );

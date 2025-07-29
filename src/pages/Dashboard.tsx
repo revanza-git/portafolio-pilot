@@ -6,14 +6,17 @@ import { PortfolioChart } from '@/components/dashboard/portfolio-chart';
 import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { useWalletStore } from '@/stores/wallet';
 import { usePortfolioStore } from '@/stores/portfolio';
-import { generateMockTokens, generateMockTransactions } from '@/lib/mock-data';
+import { useAPIClient } from '@/lib/api/client';
 import { Navigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function Dashboard() {
   console.log('Dashboard: Component starting to render...');
   
-  const { isConnected } = useWalletStore();
-  console.log('Dashboard: Wallet connected:', isConnected);
+  const { isConnected, address } = useWalletStore();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  console.log('Dashboard: Wallet connected:', isConnected, 'Authenticated:', isAuthenticated);
   
   const { 
     tokens, 
@@ -26,32 +29,91 @@ export default function Dashboard() {
     setLoading 
   } = usePortfolioStore();
   
+  const apiClient = useAPIClient();
+  const { toast } = useToast();
+  
   console.log('Dashboard: Portfolio store loaded, isLoading:', isLoading);
 
   useEffect(() => {
-    if (isConnected) {
-      // TODO: Replace with real API calls
-      setLoading(true);
-      
-      setTimeout(() => {
-        const mockTokens = generateMockTokens();
-        const mockTransactions = generateMockTransactions();
+    if (isConnected && address && isAuthenticated) {
+      const fetchPortfolioData = async () => {
+        setLoading(true);
         
-        setTokens(mockTokens);
-        setTransactions(mockTransactions);
-        
-        const total = mockTokens.reduce((sum, token) => sum + token.usdValue, 0);
-        setTotalValue(total, 5.2);
-        
-        setLoading(false);
-      }, 1000);
-    }
-  }, [isConnected, setTokens, setTotalValue, setTransactions, setLoading]);
+        try {
+          // Debug: Check if auth token exists
+          const authToken = localStorage.getItem('auth_token');
+          console.log('Dashboard: Auth token exists:', !!authToken);
+          console.log('Dashboard: Auth token length:', authToken?.length);
+          
+          // Fetch balances and transactions in parallel
+          const [balancesData, transactionsData] = await Promise.all([
+            apiClient.getBalances(address),
+            apiClient.getTransactions(address, { limit: 10 })
+          ]);
+          
+          // Transform balance data to match frontend format
+          const transformedTokens = balancesData.balances.map(balance => {
+            // Convert from wei to proper decimal format
+            const decimals = balance.token.decimals || 18;
+            const rawBalance = balance.balance || '0';
+            const balanceNumber = parseFloat(rawBalance) / Math.pow(10, decimals);
+            const balanceFormatted = balanceNumber.toLocaleString('en-US', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 6
+            });
 
-  // Temporarily disabled wallet check
-  // if (!isConnected) {
-  //   return <Navigate to="/" replace />;
-  // }
+            return {
+              address: balance.token.address,
+              symbol: balance.token.symbol,
+              name: balance.token.name,
+              decimals: balance.token.decimals,
+              balance: balance.balance,
+              balanceFormatted: balanceFormatted,
+              usdValue: balance.balanceUsd,
+              priceUsd: balance.token.price || 0,
+              change24h: balance.token.priceChange24h || 0,
+              logoUrl: balance.token.logoUri
+            };
+          });
+          
+          setTokens(transformedTokens);
+          setTransactions(transactionsData.transactions);
+          setTotalValue(balancesData.totalValue, 0); // TODO: Calculate 24h change
+          
+        } catch (error) {
+          console.error('Failed to fetch portfolio data:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load portfolio data. Please try again.',
+            variant: 'destructive'
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchPortfolioData();
+    }
+  }, [isConnected, address, isAuthenticated, apiClient, setTokens, setTotalValue, setTransactions, setLoading, toast]);
+
+  // Redirect to home if not connected or not authenticated
+  if (!isConnected || !isAuthenticated) {
+    console.log('Dashboard: Redirecting - Not connected or authenticated');
+    return <Navigate to="/" replace />;
+  }
+
+  // Show loading state while auth is being checked
+  if (authLoading) {
+    console.log('Dashboard: Auth loading...');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
 
   console.log('Dashboard: About to render JSX...');
   
@@ -75,7 +137,7 @@ export default function Dashboard() {
 
           {/* Recent Transactions */}
           <div>
-            <RecentTransactions />
+            <RecentTransactions isLoading={isLoading} />
           </div>
         </div>
 

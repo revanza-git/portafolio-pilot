@@ -9,7 +9,7 @@ export const config = createConfig({
     injected(),
     metaMask(),
     walletConnect({ 
-      projectId: 'demo-project-id' // TODO: Replace with actual WalletConnect project ID
+      projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'demo-project-id'
     }),
   ],
   transports: {

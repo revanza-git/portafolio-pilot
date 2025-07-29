@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: defi-dashboard-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-defi}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-defi123}
+      POSTGRES_DB: ${DB_NAME:-defi_dashboard}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-defi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:latest
+    container_name: defi-dashboard-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./db/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable",
+      "up"
+    ]
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: defi-dashboard-api
+    environment:
+      PORT: ${PORT:-3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this}
+      JWT_EXPIRY: ${JWT_EXPIRY:-24}
+      ALLOW_ORIGINS: ${ALLOW_ORIGINS:-*}
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
+      INFURA_API_KEY: ${INFURA_API_KEY}
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY}
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./:/app
+    command: ["./main"]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: defi-dashboard-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: defi-dashboard-worker
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this}
+      COINGECKO_API_KEY: ${COINGECKO_API_KEY}
+      DEFILLAMA_ENABLED: ${DEFILLAMA_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./:/app
+    command: ["./worker"]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

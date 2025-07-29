@@ -10,6 +10,16 @@ interface PortfolioOverviewProps {
   isLoading?: boolean;
 }
 
+// Safety function to prevent astronomical portfolio values
+function safeTotalValue(value: number): number {
+  // If value is unrealistically high (over $1 trillion), return 0
+  if (value > 1000000000000) {
+    console.warn(`Unrealistic portfolio value detected: $${value}. Displaying $0 instead.`);
+    return 0;
+  }
+  return value;
+}
+
 export function PortfolioOverview({ 
   totalValue: propTotalValue, 
   change24h: propChange24h, 
@@ -19,7 +29,8 @@ export function PortfolioOverview({
   const { data: realData, isLoading: realDataLoading } = usePortfolioWithRealPrices(tokens);
   
   // Use real data if available, fallback to props
-  const totalValue = realData?.totalValue ?? propTotalValue ?? 0;
+  const rawTotalValue = realData?.totalValue ?? propTotalValue ?? 0;
+  const totalValue = safeTotalValue(rawTotalValue);
   const change24h = realData?.change24h ?? propChange24h ?? 0;
   const isLoading = realDataLoading || propIsLoading || false;
   const isPositive = change24h >= 0;

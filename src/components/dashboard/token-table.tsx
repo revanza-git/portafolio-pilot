@@ -61,7 +61,7 @@ export function TokenTable({ tokens: propTokens, isLoading: propIsLoading }: Tok
           </TableHeader>
           <TableBody>
             {tokens.map((token) => {
-              const isPositive = token.change24h >= 0;
+              const isPositive = (token.change24h || 0) >= 0;
               
               return (
                 <TableRow key={token.address}>
@@ -79,25 +79,25 @@ export function TokenTable({ tokens: propTokens, isLoading: propIsLoading }: Tok
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                           <span className="text-xs font-medium">
-                            {token.symbol.slice(0, 2)}
+                            {(token.symbol || '??').slice(0, 2)}
                           </span>
                         </div>
                       )}
                       <div>
-                        <div className="font-medium">{token.symbol}</div>
-                        <div className="text-sm text-muted-foreground">{token.name}</div>
+                        <div className="font-medium">{token.symbol || 'Unknown'}</div>
+                        <div className="text-sm text-muted-foreground">{token.name || 'Unknown Token'}</div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    ${token.priceUsd.toLocaleString('en-US', { 
+                    ${(token.priceUsd || 0).toLocaleString('en-US', { 
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 6 
                     })}
                   </TableCell>
-                  <TableCell>{token.balanceFormatted}</TableCell>
+                  <TableCell>{token.balanceFormatted || '0'}</TableCell>
                   <TableCell>
-                    ${token.usdValue.toLocaleString('en-US', { 
+                    ${(token.usdValue || 0).toLocaleString('en-US', { 
                       minimumFractionDigits: 2 
                     })}
                   </TableCell>
@@ -110,7 +110,7 @@ export function TokenTable({ tokens: propTokens, isLoading: propIsLoading }: Tok
                       ) : (
                         <TrendingDown className="h-3 w-3 mr-1" />
                       )}
-                      {isPositive ? '+' : ''}{token.change24h.toFixed(2)}%
+                      {isPositive ? '+' : ''}{(token.change24h || 0).toFixed(2)}%
                     </div>
                   </TableCell>
                 </TableRow>

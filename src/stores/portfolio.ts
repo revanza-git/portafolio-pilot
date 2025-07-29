@@ -91,7 +91,14 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   // Actions
   setTokens: (tokens) => set({ tokens }),
   
-  setTotalValue: (totalValue, change24h) => set({ totalValue, change24h }),
+  setTotalValue: (totalValue, change24h) => {
+    // Safety check to prevent astronomical portfolio values
+    const safeTotalValue = totalValue > 1000000000000 ? 0 : totalValue; // Cap at $1 trillion
+    if (totalValue > 1000000000000) {
+      console.warn(`Unrealistic portfolio value detected: $${totalValue}. Using $0 instead.`);
+    }
+    set({ totalValue: safeTotalValue, change24h });
+  },
   
   setLoading: (isLoading) => set({ isLoading }),
   
@@ -104,10 +111,16 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
   setAllowancesLoading: (allowancesLoading) => set({ allowancesLoading }),
   
   updateTokenBalance: (address, balance, usdValue) => {
+    // Safety check to prevent astronomical token values
+    const safeUsdValue = usdValue > 1000000000000 ? 0 : usdValue; // Cap at $1 trillion per token
+    if (usdValue > 1000000000000) {
+      console.warn(`Unrealistic token value detected for ${address}: $${usdValue}. Using $0 instead.`);
+    }
+    
     const { tokens } = get();
     const updatedTokens = tokens.map(token =>
       token.address === address 
-        ? { ...token, balance, usdValue }
+        ? { ...token, balance, usdValue: safeUsdValue }
         : token
     );
     set({ tokens: updatedTokens });

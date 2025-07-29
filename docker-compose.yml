@@ -1,86 +1,145 @@
-# DeFi Portfolio MVP Docker Compose
-# This is a placeholder for the full-stack setup
-
-version: '3.8'
+# DeFi Portfolio Full-Stack Docker Compose
+# Unified configuration for frontend, backend, and infrastructure services
 
 services:
-  # Frontend (React + Vite)
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - VITE_API_BASE_URL=http://api:3001
-    depends_on:
-      - api
-    volumes:
-      - ./src:/app/src
-      - ./public:/app/public
-    networks:
-      - defi-network
-
-  # Backend API (Go + Fiber) - TODO: Implement
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      - GO_ENV=production
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=defi_user
-      - DB_PASSWORD=defi_password
-      - DB_NAME=defi_portfolio
-      - JWT_SECRET=your_jwt_secret_here
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      - ./backend:/app
-    networks:
-      - defi-network
-
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
+    container_name: defi-dashboard-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-defi}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-defi123}
+      POSTGRES_DB: ${DB_NAME:-defi_dashboard}
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=defi_user
-      - POSTGRES_PASSWORD=defi_password
-      - POSTGRES_DB=defi_portfolio
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-defi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - defi-network
+
+  # Database Migration Service
+  migrate:
+    image: migrate/migrate:latest
+    container_name: defi-dashboard-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/db/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable",
+      "up"
+    ]
     networks:
       - defi-network
 
   # Redis for caching and sessions
   redis:
     image: redis:7-alpine
+    container_name: defi-dashboard-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - defi-network
+
+  # Backend API Service (Go + Fiber)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: defi-dashboard-api
+    environment:
+      PORT: ${API_PORT:-3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this}
+      JWT_EXPIRY: ${JWT_EXPIRY:-24}
+      ALLOW_ORIGINS: ${ALLOW_ORIGINS:-*}
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
+      INFURA_API_KEY: ${INFURA_API_KEY}
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    command: ["./main"]
+    restart: unless-stopped
+    networks:
+      - defi-network
+
+  # Background Worker Service
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: defi-dashboard-worker
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      DATABASE_URL: postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this}
+      COINGECKO_API_KEY: ${COINGECKO_API_KEY}
+      DEFILLAMA_ENABLED: ${DEFILLAMA_ENABLED:-true}
+      ALCHEMY_API_KEY: ${ALCHEMY_API_KEY}
+      INFURA_API_KEY: ${INFURA_API_KEY}
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./backend:/app
+    command: ["./worker"]
+    restart: unless-stopped
+    networks:
+      - defi-network
+
+  # Frontend Web Service (React + Vite)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: defi-dashboard-web
+    ports:
+      - "${WEB_PORT:-8080}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - VITE_API_BASE_URL=http://api:3000
+    depends_on:
+      api:
+        condition: service_started
     networks:
       - defi-network
 
   # pgAdmin for database management (development only)
   pgadmin:
     image: dpage/pgadmin4:latest
+    container_name: defi-dashboard-pgadmin
     ports:
       - "5050:80"
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@defiportfolio.com
       - PGADMIN_DEFAULT_PASSWORD=admin
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
@@ -97,6 +156,9 @@ networks:
   defi-network:
     driver: bridge
 
-# Usage:
-# Development: docker-compose --profile dev up
-# Production: docker-compose up --scale pgadmin=0
+# Usage Examples:
+# Development (with pgAdmin): docker-compose --profile dev up
+# Production: docker-compose up
+# Background only: docker-compose up postgres redis migrate
+# API only: docker-compose up postgres redis migrate api worker
+# Full stack: docker-compose up
