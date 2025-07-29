@@ -24,6 +24,7 @@ import EmailVerification from "./pages/EmailVerification";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import FeatureFlags from "./pages/admin/FeatureFlags";
 import AdminBanners from "./pages/admin/SystemBanners";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { AdminGuard } from "@/components/admin/admin-guard";
 
@@ -56,6 +57,7 @@ const App = () => {
                     <Route path="/alerts" element={<Alerts />} />
                     <Route path="/watchlist" element={<Watchlist />} />
                     <Route path="/auth/signin" element={<SignIn />} />
+                    <Route path="/settings" element={<Settings />} />
                     <Route path="/auth/verify-email" element={<EmailVerification />} />
                     {/* Admin routes temporarily disabled */}
                     {/* <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />

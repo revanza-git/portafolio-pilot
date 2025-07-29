@@ -18,6 +18,7 @@ const navigation = [
   { name: 'Approvals', href: '/approvals' },
   { name: 'Alerts', href: '/alerts' },
   { name: 'Watchlist', href: '/watchlist' },
+  { name: 'Settings', href: '/settings' },
 ];
 
 export function Navbar() {
