@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePortfolioStore } from '@/stores/portfolio';
 import { usePortfolioWithRealPrices } from '@/hooks/use-market-data';
+import { getUniqueChains, getBestPerformer } from '@/lib/api/response-mapper';
 
 interface PortfolioOverviewProps {
   totalValue?: number;
@@ -35,6 +36,12 @@ export function PortfolioOverview({
   const isLoading = realDataLoading || propIsLoading || false;
   const isPositive = change24h >= 0;
   const changePercent = totalValue > 0 ? (change24h / totalValue) * 100 : 0;
+
+  // Calculate real data for display
+  const assetCount = tokens.length;
+  const uniqueChains = getUniqueChains(tokens);
+  const networkCount = uniqueChains.length;
+  const bestPerformer = getBestPerformer(tokens);
 
   if (isLoading) {
     return (
@@ -91,9 +98,9 @@ export function PortfolioOverview({
           <Target className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">4</div>
+          <div className="text-2xl font-bold">{assetCount}</div>
           <p className="text-xs text-muted-foreground">
-            Across 1 network
+            Across {networkCount} {networkCount === 1 ? 'network' : 'networks'}
           </p>
         </CardContent>
       </Card>
@@ -107,9 +114,18 @@ export function PortfolioOverview({
           <TrendingUp className="h-4 w-4 text-profit" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">UNI</div>
-          <p className="text-xs text-profit">
-            +5.8% ($7.00)
+          <div className="text-2xl font-bold">
+            {bestPerformer ? bestPerformer.symbol : '-'}
+          </div>
+          <p className={`text-xs ${bestPerformer && bestPerformer.change24h >= 0 ? 'text-profit' : 'text-loss'}`}>
+            {bestPerformer ? (
+              <>
+                {bestPerformer.change24h >= 0 ? '+' : ''}{bestPerformer.change24h.toFixed(2)}% 
+                (${bestPerformer.priceUsd.toFixed(2)})
+              </>
+            ) : (
+              'No data'
+            )}
           </p>
         </CardContent>
       </Card>

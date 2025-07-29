@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { usePriceHistory } from '@/hooks/use-market-data';
+import { usePortfolioValueHistory } from '@/hooks/use-market-data';
+import { usePortfolioStore } from '@/stores/portfolio';
 
 export function PortfolioChart() {
   const [timeRange, setTimeRange] = useState<'1d' | '7d' | '30d'>('7d');
-  const { data = [], isLoading } = usePriceHistory(
-    'ethereum', // Use ETH as portfolio proxy
+  const { tokens } = usePortfolioStore();
+  const { data = [], isLoading } = usePortfolioValueHistory(
+    tokens,
     timeRange === '1d' ? 1 : timeRange === '7d' ? 7 : 30
   );
 
@@ -47,7 +49,7 @@ export function PortfolioChart() {
           <div className="h-80 flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-sm text-muted-foreground">Loading price data...</p>
+              <p className="text-sm text-muted-foreground">Loading portfolio data...</p>
             </div>
           </div>
         ) : (

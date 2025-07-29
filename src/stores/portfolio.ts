@@ -11,6 +11,7 @@ export interface TokenBalance {
   priceUsd: number;
   change24h: number;
   logoUrl?: string;
+  chainId?: number; // Add chain information for multi-chain support
 }
 
 export interface Transaction {

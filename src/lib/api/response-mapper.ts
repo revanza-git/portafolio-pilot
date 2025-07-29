@@ -2,6 +2,62 @@
 import { TokenBalance } from '@/stores/portfolio';
 
 /**
+ * Chain ID to name mapping
+ */
+export const CHAIN_NAMES: Record<number, string> = {
+  1: 'Ethereum',
+  137: 'Polygon',
+  42161: 'Arbitrum',
+  10: 'Optimism',
+  56: 'BSC',
+  43114: 'Avalanche',
+  250: 'Fantom',
+  25: 'Cronos',
+  100: 'Gnosis'
+};
+
+/**
+ * Get chain name from chain ID
+ */
+export function getChainName(chainId: number): string {
+  return CHAIN_NAMES[chainId] || `Chain ${chainId}`;
+}
+
+/**
+ * Get unique chains from token list
+ */
+export function getUniqueChains(tokens: TokenBalance[]): string[] {
+  const chainIds = Array.from(new Set(tokens.map(token => token.chainId || 1)));
+  return chainIds.map(id => getChainName(id));
+}
+
+/**
+ * Find best performing token from token list
+ */
+export function getBestPerformer(tokens: TokenBalance[]): { symbol: string; change24h: number; priceUsd: number } | null {
+  if (!tokens || tokens.length === 0) return null;
+  
+  const validTokens = tokens.filter(token => 
+    token.change24h !== undefined && 
+    token.change24h !== null && 
+    !isNaN(token.change24h) &&
+    token.usdValue > 1 // Only consider tokens with meaningful value
+  );
+  
+  if (validTokens.length === 0) return null;
+  
+  const bestToken = validTokens.reduce((best, current) => 
+    current.change24h > best.change24h ? current : best
+  );
+  
+  return {
+    symbol: bestToken.symbol,
+    change24h: bestToken.change24h,
+    priceUsd: bestToken.priceUsd
+  };
+}
+
+/**
  * Safely converts a balance string (in wei) to a decimal number
  */
 export function parseTokenBalance(balance: string, decimals: number): number {
@@ -54,7 +110,8 @@ export function mapBalanceToTokenBalance(balance: any): TokenBalance | null {
     usdValue: balance.balance_usd || balance.balanceUSD || 0,
     priceUsd: balance.token.price_usd || balance.token.priceUSD || 0,
     change24h: balance.token.price_change_24h || balance.token.priceChange24h || 0,
-    logoUrl: balance.token.logo_uri || balance.token.logoURI
+    logoUrl: balance.token.logo_uri || balance.token.logoURI,
+    chainId: balance.token.chain_id || balance.token.chainID || balance.chainId || 1 // Default to Ethereum mainnet
   };
 }
 
