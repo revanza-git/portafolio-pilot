@@ -7,6 +7,7 @@ import { RecentTransactions } from '@/components/dashboard/recent-transactions';
 import { useWalletStore } from '@/stores/wallet';
 import { usePortfolioStore } from '@/stores/portfolio';
 import { useAPIClient } from '@/lib/api/client';
+import { mapBalanceToTokenBalance } from '@/lib/api/response-mapper';
 import { Navigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/auth-context';
@@ -47,38 +48,28 @@ export default function Dashboard() {
           
           // Fetch balances and transactions in parallel
           const [balancesData, transactionsData] = await Promise.all([
-            apiClient.getBalances(address),
-            apiClient.getTransactions(address, { limit: 10 })
+            apiClient.getBalances(address).catch(err => {
+              console.error('Balance fetch failed:', err);
+              return { balances: [], totalValue: 0 };
+            }),
+            apiClient.getTransactions(address, { limit: 10 }).catch(err => {
+              console.error('Transaction fetch failed:', err);
+              return { transactions: [] };
+            })
           ]);
           
-          // Transform balance data to match frontend format
-          const transformedTokens = balancesData.balances.map(balance => {
-            // Convert from wei to proper decimal format
-            const decimals = balance.token.decimals || 18;
-            const rawBalance = balance.balance || '0';
-            const balanceNumber = parseFloat(rawBalance) / Math.pow(10, decimals);
-            const balanceFormatted = balanceNumber.toLocaleString('en-US', {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 6
-            });
-
-            return {
-              address: balance.token.address,
-              symbol: balance.token.symbol,
-              name: balance.token.name,
-              decimals: balance.token.decimals,
-              balance: balance.balance,
-              balanceFormatted: balanceFormatted,
-              usdValue: balance.balanceUsd,
-              priceUsd: balance.token.price || 0,
-              change24h: balance.token.priceChange24h || 0,
-              logoUrl: balance.token.logoUri
-            };
-          });
+          console.log('Dashboard: Raw API response:', { balancesData, transactionsData });
+          
+          // Transform balance data to match frontend format using mapper
+          const transformedTokens = (balancesData.balances || [])
+            .map(mapBalanceToTokenBalance)
+            .filter(token => token !== null); // Remove null entries
+          
+          console.log('Dashboard: Transformed tokens:', transformedTokens);
           
           setTokens(transformedTokens);
-          setTransactions(transactionsData.transactions);
-          setTotalValue(balancesData.totalValue, 0); // TODO: Calculate 24h change
+          setTransactions(transactionsData.data || transactionsData.transactions || []);
+          setTotalValue(balancesData.total_value || balancesData.totalValue || 0, 0); // TODO: Calculate 24h change from price data
           
         } catch (error) {
           console.error('Failed to fetch portfolio data:', error);

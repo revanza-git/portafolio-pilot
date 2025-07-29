@@ -36,9 +36,9 @@ const App = () => {
   return (
   <WagmiProvider config={config}>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
         {/* <FeatureFlagProvider> */}
           <ThemeProvider>
+            <AuthProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
@@ -69,9 +69,9 @@ const App = () => {
                 </div>
               </BrowserRouter>
             </TooltipProvider>
+            </AuthProvider>
           </ThemeProvider>
         {/* </FeatureFlagProvider> */}
-      </AuthProvider>
     </QueryClientProvider>
   </WagmiProvider>
 );

@@ -59,8 +59,12 @@ func (h *TransactionHandler) GetTransactions(c *fiber.Ctx) error {
 		limit = 20
 	}
 
+	// Extract API keys from request headers
+	alchemyAPIKey := c.Get("X-Alchemy-API-Key", "")
+	coinGeckoAPIKey := c.Get("X-CoinGecko-API-Key", "")
+
 	// Get transactions
-	transactions, err := h.transactionService.GetTransactions(c.Context(), address, chainID, txType, page, limit)
+	transactions, err := h.transactionService.GetTransactions(c.Context(), address, chainID, txType, page, limit, alchemyAPIKey, coinGeckoAPIKey)
 	if err != nil {
 		return err
 	}

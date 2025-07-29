@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getAPIClient } from '@/lib/api/client';
+import { SiweMessage } from 'siwe';
 
 export interface User {
   id: string;
@@ -20,7 +21,7 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  signIn: () => Promise<void>; // Simplified signature to match usage
+  signIn: (address?: string, signMessage?: (message: string) => Promise<string>) => Promise<void>;
   signOut: () => void;
   linkEmail: (email: string) => Promise<void>;
   verifyEmail: (code: string) => Promise<void>;
@@ -87,34 +88,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkExistingSession();
   }, []);
 
-  const signIn = async () => {
+  const signIn = async (address?: string, signMessage?: (message: string) => Promise<string>) => {
     try {
-      console.log('AuthProvider: Starting sign in process...');
+      console.log('AuthProvider: Starting SIWE sign in process...');
       dispatch({ type: 'AUTH_START' });
 
-      // For now, just simulate authentication since SIWE is disabled
-      const mockUser: User = {
-        id: 'mock-user-id',
-        address: '0x1234567890123456789012345678901234567890',
-        isEmailVerified: false,
-        emailVerified: false,
-        isAdmin: false,
-        lastLoginAt: new Date().toISOString()
-      };
+      if (!address || !signMessage) {
+        throw new Error('Address and signMessage function are required for SIWE authentication');
+      }
 
-      // Simulate API call
       const apiClient = getAPIClient();
-      const authResponse = await apiClient.verifySiwe('mock-message', 'mock-signature');
+      
+      // Step 1: Get nonce from backend
+      console.log('AuthProvider: Getting nonce for address:', address);
+      const nonceResponse = await apiClient.getNonce(address);
+      const { nonce, message: backendMessage } = nonceResponse;
+      
+      // Step 2: Create SIWE message
+      console.log('AuthProvider: Creating SIWE message with nonce:', nonce);
+      const siweMessage = new SiweMessage({
+        domain: window.location.hostname,
+        address: address,
+        statement: 'Sign in to DeFi Portfolio Dashboard',
+        uri: window.location.origin,
+        version: '1',
+        chainId: 1, // Ethereum mainnet
+        nonce: nonce,
+        issuedAt: new Date().toISOString(),
+      });
+
+      const messageToSign = siweMessage.prepareMessage();
+      console.log('AuthProvider: SIWE message to sign:', messageToSign);
+
+      // Step 3: Sign the message
+      console.log('AuthProvider: Requesting signature from wallet...');
+      const signature = await signMessage(messageToSign);
+      console.log('AuthProvider: Signature received');
+
+      // Step 4: Verify signature with backend
+      console.log('AuthProvider: Verifying signature with backend...');
+      const authResponse = await apiClient.verifySiwe(messageToSign, signature);
       
       localStorage.setItem('auth_token', authResponse.token);
-      dispatch({ type: 'AUTH_SUCCESS', payload: authResponse.user || mockUser });
+      dispatch({ type: 'AUTH_SUCCESS', payload: authResponse.user });
 
-      toast.success('Successfully signed in!');
-      console.log('AuthProvider: Sign in successful');
+      toast.success('Successfully signed in with wallet!');
+      console.log('AuthProvider: SIWE authentication successful');
     } catch (error) {
-      console.error('AuthProvider: Sign in failed:', error);
-      dispatch({ type: 'AUTH_ERROR', payload: 'Failed to sign in' });
-      toast.error('Failed to sign in. Please try again.');
+      console.error('AuthProvider: SIWE sign in failed:', error);
+      let errorMessage = 'Failed to sign in';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('User rejected')) {
+          errorMessage = 'Signature was rejected. Please try again.';
+        } else if (error.message.includes('Invalid SIWE message format')) {
+          errorMessage = 'Authentication format error. Please try again.';
+        } else if (error.message.includes('rate limit')) {
+          errorMessage = 'Too many attempts. Please wait a moment and try again.';
+        }
+      }
+      
+      dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
+      toast.error(errorMessage);
     }
   };
 

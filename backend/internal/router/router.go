@@ -56,7 +56,7 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.AllowOrigins,
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
-		AllowHeaders:     "Authorization,Content-Type,Accept,Origin,X-Requested-With",
+		AllowHeaders:     "Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Alchemy-API-Key,X-CoinGecko-API-Key,X-Etherscan-API-Key,X-Infura-API-Key,x-alchemy-api-key,x-coingecko-api-key,x-etherscan-api-key,x-infura-api-key",
 		AllowCredentials: true,
 		MaxAge:           86400,
 	}))
@@ -99,7 +99,7 @@ func SetupRoutes(app *fiber.App, db *pgxpool.Pool, cfg *config.Config) {
 	yieldPoolRepo := repos.NewYieldPoolRepository(db)
 	yieldPositionRepo := repos.NewYieldPositionRepository(db)
 
-	// Initialize services
+	// Initialize services (blockchain services will be created dynamically with user API keys)
 	authService := services.NewAuthService(userRepo, walletRepo, cfg.JWTSecret, cfg.JWTExpiry)
 	siweService := services.NewSIWEService(userRepo, nonceRepo, "localhost") // TODO: Use actual domain from config
 	portfolioService := services.NewPortfolioService(walletRepo, tokenRepo)

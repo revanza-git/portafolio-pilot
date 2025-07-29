@@ -65,8 +65,11 @@ func (s *SIWEService) VerifySignature(ctx context.Context, message, signature st
 	}
 
 	// Validate domain
-	if siweMessage.GetDomain() != s.domain {
-		return nil, errors.BadRequest("Invalid domain in SIWE message")
+	messageDomain := siweMessage.GetDomain()
+	if messageDomain != s.domain {
+		// Log the domain mismatch for debugging
+		fmt.Printf("Domain mismatch: expected '%s', got '%s'\n", s.domain, messageDomain)
+		return nil, errors.BadRequest(fmt.Sprintf("Invalid domain in SIWE message: expected '%s', got '%s'", s.domain, messageDomain))
 	}
 
 	// Validate address format

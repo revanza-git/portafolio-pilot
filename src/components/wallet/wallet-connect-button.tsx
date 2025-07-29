@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Wallet, ChevronDown, Copy, ExternalLink, LogOut } from 'lucide-react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useSignMessage } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,9 +19,46 @@ export function WalletConnectButton() {
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
+  const { signMessageAsync, isError: signError, error: signMessageError } = useSignMessage();
   const { toast } = useToast();
   const { setWallet, disconnect: disconnectStore } = useWalletStore();
   const { signIn, signOut, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Create a safe wrapper for signMessageAsync
+  const handleSignMessage = async (message: string): Promise<string> => {
+    try {
+      console.log('WalletConnectButton: Attempting to sign message...');
+      if (!isConnected || !address) {
+        throw new Error('Wallet not connected');
+      }
+      
+      // Check for any existing sign errors
+      if (signError && signMessageError) {
+        console.error('WalletConnectButton: Previous sign error:', signMessageError);
+        throw signMessageError;
+      }
+      
+      const signature = await signMessageAsync({ 
+        message,
+        account: address // Explicitly pass the account
+      });
+      console.log('WalletConnectButton: Message signed successfully');
+      return signature;
+    } catch (error) {
+      console.error('WalletConnectButton: Message signing failed:', error);
+      
+      // Handle specific wagmi/connector errors
+      if (error instanceof Error) {
+        if (error.message.includes('User rejected')) {
+          throw new Error('User rejected signature request');
+        } else if (error.message.includes('getChainId')) {
+          throw new Error('Wallet connector error. Please reconnect your wallet.');
+        }
+      }
+      
+      throw error;
+    }
+  };
 
   // Sync wagmi state with zustand store and trigger authentication
   useEffect(() => {
@@ -32,7 +69,10 @@ export function WalletConnectButton() {
       // Auto-trigger SIWE authentication if wallet connected but not authenticated
       if (!isAuthenticated && !authLoading) {
         console.log('Wallet connected but not authenticated, triggering SIWE...');
-        signIn().catch(console.error);
+        // Add a small delay to ensure wallet is fully ready
+        setTimeout(() => {
+          signIn(address, handleSignMessage).catch(console.error);
+        }, 500);
       }
     } else if (!isConnected) {
       disconnectStore();
@@ -106,7 +146,7 @@ export function WalletConnectButton() {
   if (isConnected && !isAuthenticated) {
     return (
       <Button 
-        onClick={() => signIn().catch(console.error)}
+        onClick={() => address && signIn(address, handleSignMessage).catch(console.error)}
         variant="outline" 
         className="gap-2"
       >

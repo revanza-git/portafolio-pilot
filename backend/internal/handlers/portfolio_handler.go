@@ -37,8 +37,12 @@ func (h *PortfolioHandler) GetBalances(c *fiber.Ctx) error {
 
 	hideSmall := c.Query("hideSmall") == "true"
 
+	// Extract API keys from request headers
+	alchemyAPIKey := c.Get("X-Alchemy-API-Key", "")
+	coinGeckoAPIKey := c.Get("X-CoinGecko-API-Key", "")
+
 	// Get balances
-	balances, err := h.portfolioService.GetBalances(c.Context(), address, chainID, hideSmall)
+	balances, err := h.portfolioService.GetBalances(c.Context(), address, chainID, hideSmall, alchemyAPIKey, coinGeckoAPIKey)
 	if err != nil {
 		return err
 	}
@@ -66,6 +70,10 @@ func (h *PortfolioHandler) GetHistory(c *fiber.Ctx) error {
 	period := c.Query("period", "1w")
 	interval := c.Query("interval", "1d")
 
+	// Extract API keys from request headers
+	alchemyAPIKey := c.Get("X-Alchemy-API-Key", "")
+	coinGeckoAPIKey := c.Get("X-CoinGecko-API-Key", "")
+
 	// Validate period
 	validPeriods := map[string]bool{
 		"1d": true, "1w": true, "1m": true, 
@@ -84,7 +92,7 @@ func (h *PortfolioHandler) GetHistory(c *fiber.Ctx) error {
 	}
 
 	// Get history
-	history, err := h.portfolioService.GetHistory(c.Context(), address, chainID, period, interval)
+	history, err := h.portfolioService.GetHistory(c.Context(), address, chainID, period, interval, alchemyAPIKey, coinGeckoAPIKey)
 	if err != nil {
 		return err
 	}

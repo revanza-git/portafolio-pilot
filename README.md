@@ -36,58 +36,82 @@ A professional full-stack DeFi portfolio management dashboard built with React, 
 - **OR** Node.js 18+ and Go 1.22+ for local development
 - Git
 
-## 🐳 Docker Setup (Recommended)
+## 🐳 Docker Setup (Recommended) - Infrastructure + API in Docker, Frontend Local
 
-### Full Stack with Docker Compose
+### Hybrid Development Setup (Current Implementation)
+
+This setup runs all backend services and infrastructure in Docker while allowing the frontend to run locally for optimal development experience with hot reloading.
 
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd defi-portfolio-mvp
+   cd defip
    ```
 
-2. **Set up environment variables**
+2. **Environment setup**
    ```bash
-   cp .env.example .env
+   # The .env file is already configured for local development
+   # Check .env.example for reference values
    ```
-   Edit `.env` and add your API keys:
-   - `ALCHEMY_API_KEY` - Get from [Alchemy](https://alchemy.com)
-   - `INFURA_API_KEY` - Get from [Infura](https://infura.io)
-   - `ETHERSCAN_API_KEY` - Get from [Etherscan](https://etherscan.io/apis)
-   - `JWT_SECRET` - Use a strong secret for production
+   Key environment variables:
+   - `VITE_API_BASE_URL=http://localhost:3000` (Frontend API endpoint)
+   - `API_PORT=3000` (Backend API port)
+   - `ALCHEMY_API_KEY`, `INFURA_API_KEY`, `ETHERSCAN_API_KEY` (Add your real API keys)
 
-3. **Start all services**
+3. **Start backend services (Docker)**
    ```bash
-   # Production mode
-   docker-compose up -d
+   # Step 1: Start infrastructure services first
+   docker-compose -f docker-compose.local.yml up -d postgres redis
    
-   # Development mode (includes pgAdmin)
-   docker-compose --profile dev up -d
+   # Step 2: Run database migrations
+   docker-compose -f docker-compose.local.yml up migrate
+   
+   # Step 3: Start API and worker services
+   docker-compose -f docker-compose.local.yml up -d api worker
+   
+   # Optional: Start pgAdmin for database management
+   docker-compose -f docker-compose.local.yml --profile tools up -d pgadmin
    ```
 
-4. **Access the applications**
-   - **Frontend**: http://localhost:8080
+4. **Start frontend (Local)**
+   ```bash
+   # Install dependencies
+   npm install
+   
+   # Start development server with hot reloading
+   npm run dev
+   ```
+
+5. **Access the applications**
+   - **Frontend**: http://localhost:8080 (Vite dev server)
    - **Backend API**: http://localhost:3000
-   - **pgAdmin** (dev only): http://localhost:5050
+   - **Database**: localhost:5432 (defi/defi123)
+   - **Redis**: localhost:6379
+   - **pgAdmin** (optional): http://localhost:5050 (admin@defiportfolio.com / admin)
 
 ### Service Management
 
 ```bash
-# View logs
-docker-compose logs -f
+# View logs for all services
+docker-compose -f docker-compose.local.yml logs -f
+
+# View logs for specific service
+docker-compose -f docker-compose.local.yml logs -f api
 
 # Stop all services
-docker-compose down
+docker-compose -f docker-compose.local.yml down
+
+# Stop and remove volumes (clean database)
+docker-compose -f docker-compose.local.yml down -v
 
 # Restart specific service
-docker-compose restart api
+docker-compose -f docker-compose.local.yml restart api
 
 # View running services
-docker-compose ps
+docker-compose -f docker-compose.local.yml ps
 
-# Rebuild after code changes
-docker-compose build
-docker-compose up -d
+# Rebuild and restart after code changes
+docker-compose -f docker-compose.local.yml up --build -d api worker
 ```
 
 ### Available Endpoints
@@ -457,6 +481,33 @@ jobs:
 - Secure API endpoints
 - Input validation and sanitization
 
+## 🔧 Recent Updates & Fixes (January 2025)
+
+### 🎯 Authentication System Overhaul
+- **✅ SIWE (Sign-In With Ethereum) Implementation**: Complete authentication flow with proper message formatting
+- **✅ Wagmi v2 Integration**: Fixed connector compatibility issues and message signing
+- **✅ Provider Context Optimization**: Resolved React context ordering for wagmi/auth integration
+- **✅ Error Handling Enhancement**: Comprehensive error handling for wallet connection and signing flows
+
+### 🐛 Technical Fixes
+- **Fixed**: `TypeError: connection.connector.getChainId is not a function` error
+- **Fixed**: "Invalid SIWE message format" backend validation error
+- **Fixed**: React context provider ordering issues
+- **Fixed**: Wagmi signMessageAsync parameter handling
+- **Improved**: Wallet connection state management and persistence
+
+### 🏗️ Development Experience
+- **Enhanced**: Step-by-step Docker service startup to prevent timeouts
+- **Added**: Comprehensive error logging and debugging
+- **Improved**: Development workflow with proper service dependencies
+- **Updated**: Documentation with actual working setup instructions
+
+### 🔒 Security Improvements
+- **Implemented**: Proper SIWE message domain validation
+- **Enhanced**: JWT token handling and storage
+- **Added**: Rate limiting protection for authentication endpoints
+- **Improved**: Error messages for better UX without exposing sensitive details
+
 ## 🚧 Development Status
 
 ### ✅ Completed
@@ -478,11 +529,15 @@ jobs:
 - [x] **Real wallet integration (wagmi/viem with SIWE authentication)**
 - [x] **Blockchain API integration (Alchemy, Infura, Etherscan)**
 - [x] **DeFi protocol APIs (0x, 1inch, LiFi, Socket)**
+- [x] **Complete SIWE authentication flow with proper message formatting**
+- [x] **Wagmi v2 connector compatibility and error handling**
+- [x] **Production-ready Docker development setup**
 
 ### 🔄 In Progress
-- [ ] Frontend-Backend API integration (replacing mock data)
+- [ ] Frontend-Backend API integration (replacing mock data with real blockchain data)
 - [ ] Real-time WebSocket price feeds implementation
 - [ ] Transaction broadcasting and execution flows
+- [ ] Cross-chain balance aggregation
 
 ### 📋 Planned
 - [ ] Real-time WebSocket price feeds
@@ -512,7 +567,7 @@ jobs:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-**Copyright © 2024 Revanza Raytama**
+**Copyright © 2025 Revanza Raytama**
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

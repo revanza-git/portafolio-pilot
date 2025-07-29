@@ -1,0 +1,158 @@
+# Local Development Setup - Infrastructure + API in Docker, Frontend Local
+# This configuration runs all backend services and infrastructure in Docker
+# while allowing the frontend to run locally for development with hot reloading
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: defi-dashboard-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-defi}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-defi123}
+      POSTGRES_DB: ${DB_NAME:-defi_dashboard}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-defi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - defi-network
+
+  # Database Migration Service
+  migrate:
+    image: migrate/migrate:latest
+    container_name: defi-dashboard-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/db/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable",
+      "up"
+    ]
+    networks:
+      - defi-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: defi-dashboard-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - defi-network
+
+  # Backend API Service (Go + Fiber)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: defi-dashboard-api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      - PORT=3000
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - DATABASE_URL=postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - JWT_EXPIRY=${JWT_EXPIRY:-24}
+      - ALLOW_ORIGINS=${ALLOW_ORIGINS:-http://localhost:5173,http://localhost:8080}
+      - REDIS_URL=redis://redis:6379
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY}
+      - INFURA_API_KEY=${INFURA_API_KEY}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY}
+      - COINGECKO_API_KEY=${COINGECKO_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    # volumes:
+      # Optional: Mount source for development
+      # - ./backend:/app
+    restart: unless-stopped
+    networks:
+      - defi-network
+
+  # Background Worker Service
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: defi-dashboard-worker
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - DATABASE_URL=postgresql://${DB_USER:-defi}:${DB_PASSWORD:-defi123}@postgres:5432/${DB_NAME:-defi_dashboard}?sslmode=disable
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - REDIS_URL=redis://redis:6379
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY}
+      - INFURA_API_KEY=${INFURA_API_KEY}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY}
+      - COINGECKO_API_KEY=${COINGECKO_API_KEY}
+      - DEFILLAMA_ENABLED=${DEFILLAMA_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    # volumes:
+      # Optional: Mount source for development
+      # - ./backend:/app
+    restart: unless-stopped
+    networks:
+      - defi-network
+
+  # pgAdmin for database management (optional - use --profile tools)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: defi-dashboard-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@defiportfolio.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - defi-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
+  pgadmin_data:
+
+networks:
+  defi-network:
+    driver: bridge
+
+# Usage:
+# Start infrastructure + API: docker-compose -f docker-compose.local.yml up
+# With pgAdmin: docker-compose -f docker-compose.local.yml --profile tools up
+# In background: docker-compose -f docker-compose.local.yml up -d
+# Stop: docker-compose -f docker-compose.local.yml down
+# Clean up: docker-compose -f docker-compose.local.yml down -v
