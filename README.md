@@ -1,6 +1,6 @@
-# DeFi Portfolio MVP
+# DeFi Portfolio Management System
 
-A professional DeFi portfolio management dashboard built with React, TypeScript, and modern web technologies.
+A professional full-stack DeFi portfolio management dashboard built with React, TypeScript, Go, and modern web technologies.
 
 ## 🚀 Features
 
