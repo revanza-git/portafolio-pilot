@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff, Save, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Save, Trash2, AlertTriangle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ApiKeys {
@@ -16,6 +17,7 @@ interface ApiKeys {
 }
 
 const Settings = () => {
+  const navigate = useNavigate();
   const [apiKeys, setApiKeys] = useState<ApiKeys>({
     alchemyApiKey: '',
     coingeckoApiKey: '',
@@ -122,12 +124,23 @@ const Settings = () => {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground mt-2">
-            Configure your API keys for real-time DeFi data integration
-          </p>
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold">Settings</h1>
+            <p className="text-muted-foreground mt-1">
+              Configure your API keys for real-time DeFi data integration
+            </p>
+          </div>
         </div>
 
         {/* Connection Status */}
