@@ -119,13 +119,44 @@ export function mapBalanceToTokenBalance(balance: any): TokenBalance | null {
  * Maps API transaction response to frontend Transaction format
  */
 export function mapTransactionToFrontend(transaction: any) {
-  // This would map the API transaction format to the frontend format
-  // Implementation depends on the final API response structure
+  // Map API status to frontend status
+  const statusMap: Record<string, 'success' | 'pending' | 'failed'> = {
+    'confirmed': 'success',
+    'pending': 'pending', 
+    'failed': 'failed'
+  };
+
+  // Calculate gas fee in readable format
+  const gasFee = (() => {
+    const gasUsed = transaction.metadata?.gasUsed || transaction.gas;
+    const gasPrice = transaction.gasPrice;
+    
+    if (gasUsed && gasPrice) {
+      // Convert wei to ETH/MATIC then to USD (using rough price estimate)
+      const gasCostWei = parseFloat(gasUsed) * parseFloat(gasPrice);
+      const gasCostETH = gasCostWei / 1e18;
+      const ethPrice = 2500; // Rough ETH price estimate - could be improved with real price data
+      return `$${(gasCostETH * ethPrice).toFixed(2)}`;
+    }
+    return undefined;
+  })();
+
   return {
     hash: transaction.hash,
-    type: transaction.type,
+    type: transaction.type as 'send' | 'receive' | 'swap' | 'approve',
     timestamp: new Date(transaction.timestamp).getTime(),
-    status: transaction.status,
-    // Add more mappings as needed based on API structure
+    status: statusMap[transaction.status] || 'pending',
+    tokenIn: transaction.metadata?.tokenIn ? {
+      symbol: transaction.metadata.tokenIn.symbol,
+      amount: transaction.metadata.tokenIn.amount || '0',
+      usdValue: transaction.metadata.tokenIn.usdValue || 0
+    } : undefined,
+    tokenOut: transaction.metadata?.tokenOut ? {
+      symbol: transaction.metadata.tokenOut.symbol,
+      amount: transaction.metadata.tokenOut.amount || '0', 
+      usdValue: transaction.metadata.tokenOut.usdValue || 0
+    } : undefined,
+    gasUsed: transaction.metadata?.gasUsed || transaction.gas,
+    gasFee
   };
 }

@@ -15,9 +15,9 @@ import { useAuth } from '@/contexts/auth-context';
 export default function Dashboard() {
   console.log('Dashboard: Component starting to render...');
   
-  const { isConnected, address } = useWalletStore();
+  const { isConnected, address, chainId } = useWalletStore();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  console.log('Dashboard: Wallet connected:', isConnected, 'Authenticated:', isAuthenticated);
+  console.log('Dashboard: Wallet connected:', isConnected, 'Authenticated:', isAuthenticated, 'ChainId:', chainId);
   
   const { 
     tokens, 
@@ -48,11 +48,11 @@ export default function Dashboard() {
           
           // Fetch balances and transactions in parallel
           const [balancesData, transactionsData] = await Promise.all([
-            apiClient.getBalances(address).catch(err => {
+            apiClient.getBalances(address, { chainId }).catch(err => {
               console.error('Balance fetch failed:', err);
               return { balances: [], totalValue: 0 };
             }),
-            apiClient.getTransactions(address, { limit: 10 }).catch(err => {
+            apiClient.getTransactions(address, { limit: 10, chainId }).catch(err => {
               console.error('Transaction fetch failed:', err);
               return { transactions: [] };
             })
@@ -85,7 +85,7 @@ export default function Dashboard() {
       
       fetchPortfolioData();
     }
-  }, [isConnected, address, isAuthenticated, apiClient, setTokens, setTotalValue, setTransactions, setLoading, toast]);
+  }, [isConnected, address, chainId, isAuthenticated, apiClient, setTokens, setTotalValue, setTransactions, setLoading, toast]);
 
   // Redirect to home if not connected or not authenticated
   if (!isConnected || !isAuthenticated) {

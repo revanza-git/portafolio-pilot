@@ -53,21 +53,23 @@ func (s *BlockchainService) GetWalletBalances(ctx context.Context, address strin
 		return nil, 0, fmt.Errorf("failed to get token balances: %w", err)
 	}
 
-	// Get ETH balance
-	ethBalance, err := s.alchemyClient.GetETHBalance(ctx, address, chainID)
-	if err != nil {
-		logger.Error("Failed to get ETH balance", "error", err)
-	} else if ethBalance.Cmp(big.NewInt(0)) > 0 {
-		// Add ETH balance to results
-		ethToken := s.createETHToken(chainID)
-		balance := &models.Balance{
-			ID:       uuid.New(),
-			WalletID: uuid.New(),
-			TokenID:  ethToken.ID,
-			Token:    ethToken,
-			Balance:  ethBalance.String(),
+	// Get ETH balance (skip for Polygon Amoy as it's already included in GetTokenBalances)
+	if chainID != 80002 {
+		ethBalance, err := s.alchemyClient.GetETHBalance(ctx, address, chainID)
+		if err != nil {
+			logger.Error("Failed to get ETH balance", "error", err)
+		} else if ethBalance.Cmp(big.NewInt(0)) > 0 {
+			// Add ETH balance to results
+			ethToken := s.createETHToken(chainID)
+			balance := &models.Balance{
+				ID:       uuid.New(),
+				WalletID: uuid.New(),
+				TokenID:  ethToken.ID,
+				Token:    ethToken,
+				Balance:  ethBalance.String(),
+			}
+			balances = append(balances, balance)
 		}
-		balances = append(balances, balance)
 	}
 
 	// Get USD prices for all tokens
@@ -178,6 +180,9 @@ func (s *BlockchainService) createETHToken(chainID int) *models.Token {
 	case 10: // Optimism
 		symbol = "ETH" 
 		name = "Ether"
+	case 80002: // Polygon Amoy
+		symbol = "MATIC"
+		name = "Polygon"
 	default:
 		symbol = "ETH"
 		name = "Ether"
@@ -256,10 +261,11 @@ func FormatTokenAmount(amount float64, decimals int) string {
 
 // Chain ID constants
 const (
-	ChainIDEthereum = 1
-	ChainIDPolygon  = 137
-	ChainIDArbitrum = 42161
-	ChainIDOptimism = 10
+	ChainIDEthereum    = 1
+	ChainIDPolygon     = 137
+	ChainIDArbitrum    = 42161
+	ChainIDOptimism    = 10
+	ChainIDPolygonAmoy = 80002 // Polygon Amoy Testnet
 )
 
 // GetChainName returns the chain name for a given chain ID
@@ -273,6 +279,8 @@ func GetChainName(chainID int) string {
 		return "Arbitrum"
 	case ChainIDOptimism:
 		return "Optimism"
+	case ChainIDPolygonAmoy:
+		return "Polygon Amoy"
 	default:
 		return fmt.Sprintf("Chain %d", chainID)
 	}
@@ -280,5 +288,5 @@ func GetChainName(chainID int) string {
 
 // GetSupportedChains returns list of supported chain IDs
 func GetSupportedChains() []int {
-	return []int{ChainIDEthereum, ChainIDPolygon, ChainIDArbitrum, ChainIDOptimism}
+	return []int{ChainIDEthereum, ChainIDPolygon, ChainIDArbitrum, ChainIDOptimism, ChainIDPolygonAmoy}
 }

@@ -21,7 +21,7 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  signIn: (address?: string, signMessage?: (message: string) => Promise<string>) => Promise<void>;
+  signIn: (address?: string, signMessage?: (message: string) => Promise<string>, chainId?: number) => Promise<void>;
   signOut: () => void;
   linkEmail: (email: string) => Promise<void>;
   verifyEmail: (code: string) => Promise<void>;
@@ -88,13 +88,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkExistingSession();
   }, []);
 
-  const signIn = async (address?: string, signMessage?: (message: string) => Promise<string>) => {
+  const signIn = async (address?: string, signMessage?: (message: string) => Promise<string>, chainId?: number) => {
     try {
       console.log('AuthProvider: Starting SIWE sign in process...');
       dispatch({ type: 'AUTH_START' });
 
+      // If called without parameters, show error asking user to connect wallet first
       if (!address || !signMessage) {
-        throw new Error('Address and signMessage function are required for SIWE authentication');
+        throw new Error('Please connect your wallet first and try again');
       }
 
       const apiClient = getAPIClient();
@@ -105,14 +106,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { nonce, message: backendMessage } = nonceResponse;
       
       // Step 2: Create SIWE message
-      console.log('AuthProvider: Creating SIWE message with nonce:', nonce);
+      const actualChainId = chainId || 1; // Default to Ethereum mainnet if not provided
+      console.log('AuthProvider: Creating SIWE message with nonce:', nonce, 'chainId:', actualChainId);
       const siweMessage = new SiweMessage({
         domain: window.location.hostname,
         address: address,
         statement: 'Sign in to DeFi Portfolio Dashboard',
         uri: window.location.origin,
         version: '1',
-        chainId: 1, // Ethereum mainnet
+        chainId: actualChainId,
         nonce: nonce,
         issuedAt: new Date().toISOString(),
       });

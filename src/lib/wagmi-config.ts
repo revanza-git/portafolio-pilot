@@ -1,10 +1,10 @@
 import { http, createConfig } from 'wagmi';
-import { mainnet, polygon, arbitrum, optimism } from 'wagmi/chains';
+import { mainnet, polygon, arbitrum, optimism, polygonAmoy } from 'wagmi/chains';
 import { metaMask, walletConnect, injected } from 'wagmi/connectors';
 
 // Chain configurations with public RPC endpoints
 export const config = createConfig({
-  chains: [mainnet, polygon, arbitrum, optimism],
+  chains: [mainnet, polygon, arbitrum, optimism, polygonAmoy],
   connectors: [
     injected(),
     metaMask(),
@@ -17,6 +17,7 @@ export const config = createConfig({
     [polygon.id]: http('https://polygon-rpc.com'),
     [arbitrum.id]: http('https://arb1.arbitrum.io/rpc'),
     [optimism.id]: http('https://mainnet.optimism.io'),
+    [polygonAmoy.id]: http('https://rpc-amoy.polygon.technology'),
   },
   ssr: false,
 });

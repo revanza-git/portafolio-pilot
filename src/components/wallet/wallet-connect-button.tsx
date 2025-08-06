@@ -71,7 +71,7 @@ export function WalletConnectButton() {
         console.log('Wallet connected but not authenticated, triggering SIWE...');
         // Add a small delay to ensure wallet is fully ready
         setTimeout(() => {
-          signIn(address, handleSignMessage).catch(console.error);
+          signIn(address, handleSignMessage, chainId).catch(console.error);
         }, 500);
       }
     } else if (!isConnected) {
@@ -119,6 +119,30 @@ export function WalletConnectButton() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
+  const getBlockExplorerInfo = (chainId: number) => {
+    switch (chainId) {
+      case 1: // Ethereum Mainnet
+        return { name: 'Etherscan', url: 'https://etherscan.io' };
+      case 137: // Polygon
+        return { name: 'PolygonScan', url: 'https://polygonscan.com' };
+      case 42161: // Arbitrum
+        return { name: 'Arbiscan', url: 'https://arbiscan.io' };
+      case 10: // Optimism
+        return { name: 'Optimistic Etherscan', url: 'https://optimistic.etherscan.io' };
+      case 80002: // Polygon Amoy
+        return { name: 'Polygon Amoy Explorer', url: 'https://amoy.polygonscan.com' };
+      default:
+        return { name: 'Etherscan', url: 'https://etherscan.io' };
+    }
+  };
+
+  const openBlockExplorer = () => {
+    if (address && chainId) {
+      const { url } = getBlockExplorerInfo(chainId);
+      window.open(`${url}/address/${address}`, '_blank');
+    }
+  };
+
   if (!isConnected || !address) {
     return (
       <Button 
@@ -146,7 +170,7 @@ export function WalletConnectButton() {
   if (isConnected && !isAuthenticated) {
     return (
       <Button 
-        onClick={() => address && signIn(address, handleSignMessage).catch(console.error)}
+        onClick={() => address && signIn(address, handleSignMessage, chainId).catch(console.error)}
         variant="outline" 
         className="gap-2"
       >
@@ -171,9 +195,9 @@ export function WalletConnectButton() {
           <Copy className="mr-2 h-4 w-4" />
           Copy Address
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={openBlockExplorer}>
           <ExternalLink className="mr-2 h-4 w-4" />
-          View on Etherscan
+          View on {chainId ? getBlockExplorerInfo(chainId).name : 'Etherscan'}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleDisconnect} className="text-destructive">

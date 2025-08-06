@@ -112,14 +112,15 @@ func (c *CoinGeckoClient) GetPriceHistory(ctx context.Context, tokenID string, d
 
 // Token ID mappings
 var TokenIDMappings = map[string]string{
-	"eth":  "ethereum",
-	"weth": "weth",
-	"usdc": "usd-coin",
-	"usdt": "tether",
-	"dai":  "dai",
-	"wbtc": "wrapped-bitcoin",
-	"uni":  "uniswap",
-	"aave": "aave",
-	"link": "chainlink",
+	"eth":   "ethereum",
+	"weth":  "weth",
+	"usdc":  "usd-coin",
+	"usdt":  "tether",
+	"dai":   "dai",
+	"wbtc":  "wrapped-bitcoin",
+	"uni":   "uniswap",
+	"aave":  "aave",
+	"link":  "chainlink",
 	"matic": "matic-network",
+	"pol":   "matic-network", // POL is the new Polygon token symbol
 }

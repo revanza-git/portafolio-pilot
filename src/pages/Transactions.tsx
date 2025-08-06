@@ -4,17 +4,24 @@ import { TransactionFilters } from '@/components/transactions/transaction-filter
 import { TransactionList } from '@/components/transactions/transaction-list';
 import { useWalletStore } from '@/stores/wallet';
 import { usePortfolioStore } from '@/stores/portfolio';
-import { generateMockTransactions } from '@/lib/mock-data';
+import { useAPIClient } from '@/lib/api/client';
+import { mapTransactionToFrontend } from '@/lib/api/response-mapper';
 import { Navigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function Transactions() {
-  const { isConnected } = useWalletStore();
+  const { isConnected, address, chainId } = useWalletStore();
+  const { isAuthenticated } = useAuth();
   const { 
     transactions, 
     transactionsLoading, 
     setTransactions, 
     setTransactionsLoading 
   } = usePortfolioStore();
+  
+  const apiClient = useAPIClient();
+  const { toast } = useToast();
   
   const [filters, setFilters] = useState({
     type: 'all',
@@ -23,19 +30,44 @@ export default function Transactions() {
   });
 
   useEffect(() => {
-    if (isConnected) {
-      // TODO: Replace with real API calls
-      setTransactionsLoading(true);
+    if (isConnected && address && isAuthenticated) {
+      const fetchTransactions = async () => {
+        setTransactionsLoading(true);
+        
+        try {
+          const params = {
+            limit: 50,
+            chainId,
+            ...(filters.type !== 'all' && { type: filters.type })
+          };
+          
+          const transactionsData = await apiClient.getTransactions(address, params);
+          
+          // Transform API response to frontend format
+          const transformedTransactions = (transactionsData.data || [])
+            .map(mapTransactionToFrontend)
+            .filter(tx => tx !== null);
+          
+          setTransactions(transformedTransactions);
+        } catch (error) {
+          console.error('Failed to fetch transactions:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load transaction history. Please try again.',
+            variant: 'destructive'
+          });
+          // Set empty array on error
+          setTransactions([]);
+        } finally {
+          setTransactionsLoading(false);
+        }
+      };
       
-      setTimeout(() => {
-        const mockTransactions = generateMockTransactions();
-        setTransactions(mockTransactions);
-        setTransactionsLoading(false);
-      }, 800);
+      fetchTransactions();
     }
-  }, [isConnected, setTransactions, setTransactionsLoading]);
+  }, [isConnected, address, chainId, isAuthenticated, filters.type, apiClient, setTransactions, setTransactionsLoading, toast]);
 
-  if (!isConnected) {
+  if (!isConnected || !isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
